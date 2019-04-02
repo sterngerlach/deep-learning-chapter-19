@@ -1,0 +1,418 @@
+
+% k-means.tex
+
+\documentclass[dvipdfmx,notheorems,t]{beamer}
+
+\usepackage{docmute}
+\input{settings}
+
+\begin{document}
+
+\section{K-Means法}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item 扱う問題
+	\begin{itemize}
+		\item 多次元空間上のデータ点集合を考える
+		\item \alert{各データが属するクラスタを決定}する問題を考える
+	\end{itemize} \
+	
+	\item 問題設定
+	\begin{itemize}
+		\item $D$次元ユークリッド空間における、確率変数$\bm{x}$を観測
+		\item $\bm{x}$の$N$個の観測点で構成されるデータ集合$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$ $(\bm{x}_i \in \mathbb{R}^D)$
+		\item データ集合$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$を、$K$個のクラスタに分割
+		\item $K$は、\alert{既知の定数}であるとする
+	\end{itemize} \
+	
+	\item クラスタとは
+	\begin{itemize}
+		\item クラスタとは、簡単に言えば\alert{近接するデータの集合}である
+		\item クラスタの内部のデータ点間の距離が、クラスタの外側のデータとの距離と比べて、小さいようなデータの集合
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item クラスタを代表するベクトルの表現
+	\begin{itemize}
+		\item 各クラスタを代表する$K$個の$D$次元ベクトル$\mathcal{M} = \left\{ \bm{\mu}_1, \ldots, \bm{\mu}_K \right\}$ $(\bm{\mu}_k \in \mathbb{R}^D)$を導入する
+		\item これらのベクトル$\mathcal{M} = \left\{ \bm{\mu}_k \right\}$を、\alert{プロトタイプ}という
+		\item $k$番目のクラスタ($\bm{\mu}_k$が支配するクラスタ)を$\color{red} \mathcal{M}(\bm{\mu}_k)$と記す
+		\newline
+		\item ベクトル$\bm{\mu}_k$は、$k$番目のクラスタに対応するプロトタイプである
+		\item $\bm{\mu}_k$は、$\mathcal{M}(\bm{\mu}_k)$に属するデータ点の平均、即ち$k$番目のクラスタの中心である
+	\end{itemize} \
+	
+	\item 解くべき問題
+	\begin{itemize}
+		\item $N$個の全データ点を、うまくクラスタに割り振る
+		\item 各データ点から、対応する(そのデータ点が属するクラスタの)プロトタイプ$\bm{\mu}_k$への、二乗距離の総和を最小化する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item データ点のクラスタへの割り当てを表す変数
+	\begin{itemize}
+		\item 各データ$\bm{x}_i$ $(1 \le i \le N)$に対して、二値の指示変数$r_{ik} \in \left\{ 0, 1 \right\}$ $(k = 1, \ldots, K)$を定める
+		\newline
+		\item $r_{ik}$は、データ$\bm{x}_i$が、$K$個あるクラスタのうちの、どれに割り当てられるのかを表す
+		\newline
+		\item データ点$\bm{x}_i$がクラスタ$k$に割り当てられるときに、$r_{ik} = 1$となり、$j \neq k$について$r_{ij} = 0$である (\alert{1-of-K符号化法}という)
+		\begin{eqnarray}
+			r_{ik} = \left\{ \begin{array}{ll}
+				1 & (\bm{x}_i \in \mathcal{M}(\bm{\mu}_k) \text{の場合}) \\
+				0 & \text{それ以外} \\ \end{array} \right. \end{eqnarray}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item 目的関数の定義
+	\begin{itemize}
+		\item 目的関数を以下のように定義する
+		\item 各データ点$\bm{x}_i$と、$\bm{x}_i$に割り当てたベクトル$\bm{\mu}_k$($\bm{x}_i$が属するクラスタのプロトタイプ)との、二乗距離の総和
+		\begin{equation}
+			J = \sum_{i = 1}^N \sum_{k = 1}^K r_{ik} || \bm{x}_i - \bm{\mu}_k ||^2
+		\end{equation}
+		
+		\item 上式の$J$を\alert{最小化}するような、$\left\{ r_{ik} \right\}$と$\left\{ \bm{\mu}_k \right\}$を求めるのが目標
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item 目的関数$J$の$\left\{ r_{ik} \right\}$に関する最小化
+	\begin{itemize}
+		\item 目的関数の式は、各$i$について独立である
+		\begin{equation}
+			J = \sum_i \sum_k r_{ik} || \bm{x}_i - \bm{\mu}_k ||^2
+		\end{equation}
+		
+		\item $\left\{ r_{ik} \right\}$を決定する方法は簡単
+		\item 各$i$について、$||\bm{x}_i - \bm{\mu}_k||^2$が最小となるような$k$に対し、$r_{ik} = 1$とする
+		\item それ以外のクラスタ$j \neq k$については、$r_{ik} = 0$とする
+		\begin{eqnarray}
+			r_{ik} = \left\{ \begin{array}{ll}
+				1 & (k = \argmin_j || \bm{x}_i - \bm{\mu}_j ||^2 \text{のとき}) \\
+				0 & \text{それ以外} \\ \end{array} \right. \end{eqnarray}
+		\item 各データ点$\bm{x}_i$を、$\bm{x}_i$と最も近い$\bm{\mu}_k$に割り当てることに相当
+		\item 各データ点$\bm{x}_i$を、クラスタを代表するベクトル(\alert{クラスタの中心})との二乗距離が最小になるような、クラスタに割り当てる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item 目的関数$J$の$\left\{ \bm{\mu}_k \right\}$に関する最小化
+	\begin{itemize}
+		\item $J$を$\bm{\mu}_k$について偏微分して$0$とおく
+		\begin{eqnarray}
+			\frac{\partial}{\partial \bm{\mu}_k} J &=& \frac{\partial}{\partial \bm{\mu}_k} \sum_i r_{ik} || \bm{x}_i - \bm{\mu}_k ||^2 \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\mu}_k} \sum_i r_{ik} (\bm{x}_i - \bm{\mu}_k)^T (\bm{x}_i - \bm{\mu}_k) \nonumber \\
+			&=& \sum_i r_{ik} \frac{\partial}{\partial \bm{\mu}_k} (\bm{x}_i - \bm{\mu}_k)^T (\bm{x}_i - \bm{\mu}_k) \nonumber \\
+			&=& \sum_i r_{ik} \frac{\partial}{\partial \bm{\mu}_k} (\bm{x}_i^T \bm{x}_i - \bm{x}_i^T \bm{\mu}_k - \bm{\mu}_k^T \bm{x}_i + \bm{\mu}_k^T \bm{\mu}_k) \nonumber \\
+			&=& \sum_i r_{ik} \frac{\partial}{\partial \bm{\mu}_k} (\bm{x}_i^T \bm{x}_i - \bm{x}_i^T \bm{\mu}_k - \color{red} \bm{x}_i^T \bm{\mu}_k \normalcolor + \bm{\mu}_k^T \bm{\mu}_k) \nonumber \\
+			&=& \sum_i r_{ik} (2\bm{\mu}_k - 2\bm{x}_i) = 0
+		\end{eqnarray}
+		\item ここで、次の関係を用いている
+		\begin{eqnarray}
+			&& \bm{\mu}_k^T \bm{x}_i \nonumber \\
+			&=& \left( \bm{\mu}_k^T \bm{x}_i \right)^T \qquad (\because \text{スカラーであるため転置してもよい}) \nonumber \\
+			&=& \bm{x}_i^T \left( \bm{\mu}_k^T \right)^T \qquad (\because (\bm{a} \bm{b})^T = \bm{b}^T \bm{a}^T) \nonumber \\
+			&=& \bm{x}_i^T \bm{\mu}_k \nonumber
+		\end{eqnarray}
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{x}} \bm{x}^T \bm{a} = \frac{\partial}{\partial \bm{x}} \bm{a}^T \bm{x} = \bm{a} \\
+			&& \frac{\partial}{\partial \bm{x}} \bm{x}^T \bm{B} \bm{x} = \left( \bm{B} + \bm{B}^T \right) \bm{x} \quad (\color{red}{\text{2次形式}} \normalcolor) \\
+			&& \frac{\partial}{\partial \bm{x}} \bm{x}^T \bm{x} = 2 \bm{x} \\
+			&& \because \frac{\partial}{\partial \bm{x}} \bm{x}^T \bm{x} = \frac{\partial}{\partial \bm{x}} \bm{x}^T \bm{I} \bm{x} = \left( \bm{I} + \bm{I}^T \right) \bm{x} = 2 \bm{I} \bm{x} = 2 \bm{x} \nonumber
+		\end{eqnarray}
+		\item これより、$\bm{\mu}_k$について解くと次のようになる
+		\begin{eqnarray}
+			\sum_i 2 r_{ik} (\bm{\mu}_k - \bm{x}_i) &=& 0 \nonumber \\
+			\sum_i r_{ik} (\bm{\mu}_k - \bm{x}_i) &=& 0 \nonumber \\
+			\sum_i r_{ik} \bm{\mu}_k &=& \sum_i r_{ik} \bm{x}_i \nonumber \\
+			\bm{\mu}_k \left( \sum_i r_{ik} \right) &=& \sum_i r_{ik} \bm{x}_i \nonumber \\
+			\bm{\mu}_k &=& \frac{1}{\sum_i r_{ik}} \sum_i r_{ik} \bm{x}_i
+		\end{eqnarray}
+		\item $\sum_i r_{ik}$は、クラスタ$k$に属するデータの個数である
+		\item $\sum_i r_{ik} = \color{red} N_k$と表すことがある
+		\newline
+		\item $r_{ik}$は、$i$番目のデータ$\bm{x}_i$が、クラスタ$k$に割り当てられているときにのみ、$1$となる
+		\item $\sum_i r_{ik} \bm{x}_i$は、クラスタ$k$に属しているデータのベクトル$\bm{x}_i$の合計である
+		\newline
+		\item 従って、$\bm{\mu}_k$は、$k$番目のクラスタに割り当てられた、全てのデータ点$\bm{x}_i$の平均値である
+		\newline
+		\item この意味で、$\bm{\mu}_k$のことを、クラスタ$k$の\alert{平均ベクトル}、\alert{重心}、\alert{セントロイド}ということもある
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item $\left\{ \bm{\mu}_k \right\}$と$\left\{ r_{ik} \right\}$についての最適化
+	\begin{itemize}
+		\item 目的関数$J$を、$\left\{ \bm{\mu}_k \right\}$と$\left\{ r_{ik} \right\}$について最小化する式は次のようになる
+		\begin{eqnarray}
+			\bm{\mu}_k &=& \frac{1}{\sum_i r_{ik}} \sum_i r_{ik} \bm{x}_i \nonumber \\
+			r_{ik} &=& \left\{ \begin{array}{ll}
+				1 & (k = \argmin_j || \bm{x}_i - \bm{\mu}_j ||^2 \text{のとき}) \\
+				0 & \text{それ以外} \\ \end{array} \right. \nonumber
+		\end{eqnarray}
+		\item $\bm{\mu}_k$を計算する式の中に$r_{ik}$が、$r_{ik}$を計算する式の中に$\bm{\mu}_k$が入っている
+		\item $\bm{\mu}_k$を求めるためには$r_{ik}$が、$r_{ik}$を求めるためには$\bm{\mu}_k$が既知でなければならない
+		\item 従って、$\bm{\mu}_k$と$r_{ik}$の両方を同時に最適化することはできない
+		\newline
+		\item どうすれば目的関数$J$を、パラメータ$\left\{ \bm{\mu}_k \right\}$と$\left\{ r_{ik} \right\}$の両方について最小化できるか?
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item $\left\{ \bm{\mu}_k \right\}$と$\left\{ r_{ik} \right\}$についての最適化
+	\begin{itemize}
+		\item $\bm{\mu}_k$と$r_{ik}$の両方を同時に最適化することはできない
+		\newline
+		\item $\bm{\mu}_k$と$r_{ik}$を\alert{交互に最適化}すればよい
+		\item $\bm{\mu}_k$と$r_{ik}$のそれぞれを最適化する、2つのステップを交互に繰り返す
+		\newline
+		\item $\bm{\mu}_k$と$r_{ik}$の最適化は、次のように行うことができる
+	\end{itemize} \
+	\begin{enumerate}
+		\item $\mathcal{M} = \left\{ \bm{\mu}_k \right\}$の初期値を設定
+		\begin{itemize}
+			\item $N$個のデータ$\mathcal{D} = \left\{ \bm{x}_i \right\}$を、ランダムなクラスタに割り振って、各クラスタの平均ベクトル$\left\{ \bm{\mu}_k \right\}$を求める
+			\newline
+			\item データ$\mathcal{D}$からランダムに選択した$K$個のデータ点を、各クラスタの中心$\bm{\mu}_k$ $(k = 1, \ldots, K)$とすることもできる
+		\end{itemize}
+		\item \label{enum:mu-op} 第1フェーズでは、$\bm{\mu}_k$を固定しつつ、$r_{ik}$について$J$を最小化
+		\begin{eqnarray}
+			r_{ik} = \left\{ \begin{array}{ll}
+				1 & (k = \argmin_j || \bm{x}_i - \bm{\mu}_j ||^2 \text{のとき}) \\
+				0 & \text{それ以外} \\ \end{array} \right. \nonumber
+		\end{eqnarray}
+		\item \label{enum:r-op} 第2フェーズでは、$r_{ik}$を固定しつつ、$\bm{\mu}_k$について$J$を最小化
+		\begin{equation}
+			\bm{\mu}_k = \frac{1}{\sum_i r_{ik}} \sum_i r_{ik} \bm{x}_i \nonumber
+		\end{equation}
+		\item (\ref{enum:mu-op})と(\ref{enum:r-op})を、$\bm{\mu}_k$と$r_{ik}$が収束するまで繰り返す
+	\end{enumerate} \
+	\begin{itemize}
+		\item 上記の2つのステップが、後述する\alert{EMアルゴリズム}の\alert{E(Expectation)ステップ}と\alert{M(Maximization)ステップ}に対応する
+		\newline
+		\item データ点へのクラスタの再割り当てと、クラスタの平均ベクトルの再計算
+		\newline
+		\item この2段階の処理を、クラスタの再割り当てが起こらなくなるまで(2段階の処理を行っても、データが属するクラスタが変化しなくなるまで)繰り返す
+		\newline
+		\item 各フェーズで$J$の値が減少するので、アルゴリズムの収束が保証される
+		\item 大域的最適解ではなく、局所最適解に収束する可能性はある
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.3,trim=1cm 2.5cm 1cm 3cm,page=446]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{K-Meansアルゴリズムの動作}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.75,trim=2cm 16cm 1cm 2cm,page=447]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{目的関数$J$の値の遷移}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{K-Means法によるクラスタリング}
+
+\begin{itemize}
+	\item 素朴な実装では速度が遅いことがある
+	\begin{itemize}
+		\item $\left\{ r_{ik} \right\}$の更新(Eステップ)において、各データ点と、各平均ベクトルの\alert{全ての組み合わせ}間の距離を計算する必要がある
+		\begin{eqnarray}
+			r_{ik} = \left\{ \begin{array}{ll}
+				1 & (k = \argmin_j || \bm{x}_i - \bm{\mu}_j ||^2 \text{のとき}) \\
+				0 & \text{それ以外} \\ \end{array} \right. \nonumber
+		\end{eqnarray}
+		\item K-Meansの高速化について、これまでに様々な手法が提案されてきた
+		\newline
+		\item 近接するデータ点同士が、同一の部分木に属するような木構造を採用する方法
+		\item 距離の三角不等式を利用して、不必要な距離計算を避ける方法
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{逐次版のK-Means法}
+
+\begin{itemize}
+	\item 逐次版のK-Means法の導出
+	\begin{itemize}
+		\item これまでに紹介したK-Means法は、利用する全てのデータ$\mathcal{D} = \left\{ \bm{x}_i \right\}$が、最初から用意されていることが前提であった
+		\newline
+		\item ここでは、\alert{Robbins-Monro法}を使って、オンラインのアルゴリズムを導出する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Robbins-Monro法}
+
+\begin{itemize}
+	\item Robbins-Monro法
+	\begin{itemize}
+		\item 逐次学習アルゴリズムを導出するための手法
+		\item 関数$f(\theta^*) = 0$を満たす根$\theta^*$を、逐次的に計算するための式を与える
+		\newline
+		\item 同時分布$p(z, \theta)$に従う確率変数のペア$\theta, z$について、関数$f(\theta)$は、$\theta$が与えられたときの$z$の条件付き期待値$\mathbb{E} \left[ z | \theta \right]$として、定義される
+		\begin{equation}
+			f(\theta) \equiv \mathbb{E} \left[ z | \theta \right] = \int z p(z | \theta) dz
+		\end{equation}
+		\item このとき、根$\theta^*$の逐次計算式は、次のように記述される
+		\begin{equation}
+			\theta^{(N)} = \theta^{(N - 1)} - \eta_{N - 1} z(\theta^{(N - 1)})
+		\end{equation}
+		\item $\eta$は学習率
+		\item $z(\theta^{(N)})$は、確率変数$\theta$が値$\theta^{(N)}$をとるときに観測される$z$の値
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Robbins-Monro法}
+
+\begin{itemize}
+	\item Robbins-Monro法を適用するための条件
+	\begin{itemize}
+		\item Robbins-Monro法を使用するためには、満たすべき条件が幾つか存在する
+	\end{itemize}
+	\begin{enumerate}
+		\item $z$の条件付き分散$\mathbb{E} \left[ (z - f)^2 | \theta \right]$が、有限でなければならない
+		\begin{equation}
+			\mathbb{E} \left[ (z - f)^2 | \theta \right] = \int (z - f(\theta))^2 p(z | \theta) dz < \infty
+		\end{equation}
+		\item $\theta > \theta^*$では$f(\theta) > 0$、$\theta < \theta^*$では$f(\theta) < 0$を仮定 (このように仮定しても一般性は失われない)
+		\item 学習率の系列$\left\{ \eta_{N} \right\}$は次の条件を満たす
+		\begin{eqnarray}
+			\lim_{N \to \infty} \eta_{N} &=& 0 \\
+			\sum_{N = 1}^\infty \eta_{N} &=& \infty \\
+			\sum_{N = 1}^\infty \eta_{N}^2 &<& \infty
+		\end{eqnarray}
+	\end{enumerate}
+	\begin{itemize}
+		\item 最初の条件は、推定系列$\theta^{(N)}$が、目標の根$\theta^*$に収束していくように、$\theta$の修正量を減らしていくことを保証
+		\item 次の条件は、根$\theta^*$以外の値に収束しないことを保証
+		\item 最後の条件は、分散を有限に抑えることで、いつまで経っても収束しないことを防止
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{Robbins-Monro法}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.75,trim=2cm 16.5cm 1cm 2cm,page=115]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{$f(\theta)$のグラフ}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{逐次版のK-Means法}
+
+\begin{itemize}
+	\item 逐次版のK-Means法の導出
+	\begin{itemize}
+		\item 先程のパラメータ$\theta$は、$\left\{ r_{ik} \right\}$と$\left\{ \bm{\mu}_k \right\}$である
+		
+		\item パラメータの最適解$\left\{ \bm{\mu}_k^* \right\}$は、以下の式を満たす
+		\begin{equation}
+			\left. \frac{\partial}{\partial \bm{\mu}_k} J \right|_{\bm{\mu}_k^*} = \left. \frac{\partial}{\partial \bm{\mu}_k} \sum_{i = 1}^N r_{ik} || \bm{x}_i - \bm{\mu}_k ||^2 \right|_{\bm{\mu}_k^*} = 0
+		\end{equation}
+		これは以下の式と等価である $(N_k = \sum_i r_{ik})$
+		\begin{equation}
+			\left. \frac{\partial}{\partial \bm{\mu}_k} \frac{1}{N_k} \sum_{i = 1}^N r_{ik} || \bm{x}_i - \bm{\mu}_k ||^2 \right|_{\bm{\mu}_k^*} = 0
+		\end{equation}
+		これ以降、クラスタ$k$に属するデータのみを考えることにして、これを$\bm{x}_j$と書く($j = 1, \ldots, N_k$)
+		
+		\item このとき、上式から$r_{ik}$を省略でき、次のようになる
+		\begin{equation}
+			\left. \frac{\partial}{\partial \bm{\mu}_k} \frac{1}{N_k} \sum_{j = 1}^{N_k} || \bm{x}_j - \bm{\mu}_k ||^2 \right|_{\bm{\mu}_k^*} = 0
+		\end{equation}
+		
+		\item $N_k \to \infty$の極限を取って次のように変形する
+		\begin{eqnarray}
+			&& \lim_{N_k \to \infty} \frac{\partial}{\partial \bm{\mu}_k} \frac{1}{N_k} \sum_j || \bm{x}_j - \bm{\mu}_k ||^2 \nonumber \\
+			&=& \lim_{N_k \to \infty} \frac{1}{N_k} \frac{\partial}{\partial \bm{\mu}_k} \sum_j || \bm{x}_j - \bm{\mu}_k ||^2 \nonumber \\
+			&\simeq& \mathbb{E} \left[ \frac{\partial}{\partial \bm{\mu}_k} || \bm{x} - \bm{\mu}_k ||^2 \middle| \bm{\mu}_k \right] \quad (\bm{x}\text{はクラスタ$k$に属する}) \nonumber \\
+			&=& \mathbb{E} \left[ 2 (\bm{x} - \bm{\mu}_k) | \bm{\mu}_k \right] = f(\bm{\mu}_k)
+		\end{eqnarray}
+		
+		\item これより、K-Means法は、関数$f(\bm{\mu}_k^*) = 0$をみたす根$\bm{\mu}_k^*$を求める問題に帰着させられる
+		\newline
+		
+		\item 従って、Robbins-Monro法を適用すると、$\bm{\mu}_k$の逐次更新式は、以下のようになる
+		\begin{equation}
+			\bm{\mu}_k^{\mathrm{new}} = \bm{\mu}_k^{\mathrm{old}} - \eta_j (\bm{x}_j - \bm{\mu}_k^{\mathrm{old}}) \quad (\bm{x}_j\text{はクラスタ$k$に属する})
+		\end{equation}
+		
+		\item $\eta_j$は学習率パラメータであり、一般に、$j$の増加に伴って単調減少するように設定される
+		\newline
+		
+		\item クラスタ$k$に属するデータ$\bm{x}_j$が1つずつ到着するときの、$\bm{\mu}_k$のオンライン更新式が得られた
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Meansアルゴリズムの特徴}
+
+\begin{itemize}
+	\item K-Meansアルゴリズムの特徴
+	\begin{itemize}
+		\item 各データを、\alert{たった1つ}のクラスタにのみ割り当てる (\alert{ハード割り当て})
+		\newline
+		\item あるクラスタの中心ベクトル$\bm{\mu}_k$に非常に近いデータ点もあれば、複数のクラスタの中間領域にあるようなデータ点も存在する
+		\item データ$\bm{x}_i$が、クラスタ$k$に属するという結果を得たときに、そのクラスタに属することがほぼ確実なのか、それとも他のクラスタに割り振っても大差はないのかが、区別できない
+		\item 後者のようなデータ点の場合、単一のクラスタへのハード割り当ては最適でない(不正確)かもしれない
+		\newline
+		\item データ点を単一のクラスタに割り当てるのではなく、\alert{各クラスタに属する確率}を、計算できれば良さそう
+		\item 各クラスタへの割り当ての不明瞭さを反映できる
+		\item このように曖昧さを含んだ割り当てを、\alert{ソフト割り当て}という
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\end{document}

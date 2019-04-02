@@ -1,0 +1,1285 @@
+
+% em-algorithm.tex
+
+\documentclass[dvipdfmx,notheorems,t]{beamer}
+
+\usepackage{docmute}
+\input{settings}
+
+\begin{document}
+
+\section{EMアルゴリズム}
+
+\subsection{EMアルゴリズムの解釈}
+
+\begin{frame}{EMアルゴリズムの解釈}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item \alert{ソフト割り当て}を実現するために、確率モデル(混合ガウスモデル)を導入した
+		\newline
+		\item 混合ガウス分布のパラメータを、最尤推定により直接求めるのは困難であった
+		\newline
+		\item \alert{潜在変数}を導入して再度定式化を行い、混合ガウス分布に対する\alert{EMアルゴリズム}を自然に導出した
+		\newline
+		\item EMアルゴリズムの中で、潜在変数は、\alert{負担率}(事後分布)の形で登場しただけであった ($\gamma(z_{ik}) = p(z_k = 1 | \bm{x})$)
+	\end{enumerate} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item 潜在変数が果たす重要な役割を明確にする
+		\item そのうえで、混合ガウス分布の場合をもう一度見直す
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{EMアルゴリズムの解釈}
+
+\begin{itemize}
+	\item EMアルゴリズムの目的
+	\begin{itemize}
+		\item 潜在変数をもつ確率モデルについて、パラメータの最尤解を求める
+	\end{itemize} \
+	
+	\item 対数尤度関数の記述 (一般的な場合)
+	\begin{itemize}
+		\item 全ての観測データをまとめた、データ行列を$\bm{X}$とする (第$i$行が$\bm{x}_i^T$)
+		\item 全ての潜在変数をまとめた行列を$\bm{Z}$とする (第$i$行が$\bm{z}_i^T$)
+		\item 確率モデルの全てのパラメータを、$\bm{\theta}$と表す
+		\newline
+		\item 対数尤度関数は次のようになる
+		\begin{equation}
+			\ln p(\bm{X} | \bm{\theta}) = \ln \left( \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}) \right)
+		\end{equation}
+		
+		\item 潜在変数$\bm{z}$が連続変数の場合は
+		\begin{equation}
+			\ln p(\bm{X} | \bm{\theta}) = \ln \left( \int p(\bm{X}, \bm{Z} | \bm{\theta}) d\bm{Z} \right)
+		\end{equation}
+		のように、単に総和を積分に置き換えればよい
+		\newline
+		\item これ以降、離散潜在変数のみを扱うが、総和を積分に置き換えれば、ここでの議論は、連続潜在変数についても同様に成立
+	\end{itemize} \
+	
+	\item 何が問題だったか
+	\begin{itemize}
+		\item \alert{対数の中に、潜在変数に関する総和が含まれる}(\alert{log-sum}の形)
+		\item 総和が存在するので、対数$\ln$が、周辺分布$p(\bm{X}, \bm{Z} | \bm{\theta})$に直接作用することが妨げられる
+		\item その結果として、対数尤度関数が複雑な形となる
+	\end{itemize} \
+	
+	\framebreak
+	
+	\item 完全データと不完全データ
+	\begin{itemize}
+		\item $\bm{X}$だけでなく、$\bm{Z}$も観測できるとする
+		\item $\left\{ \bm{X}, \bm{Z} \right\}$の組を、\alert{完全データ集合}という
+		\item 実際には$\bm{X}$しか見えないので、実際の観測データ$\bm{X}$は\alert{不完全}である
+		\newline
+		\item $\bm{Z}$に関する知識は、潜在変数についての事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$\alert{のみ}からしか得られない
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{EMアルゴリズムの解釈}
+
+\begin{block}{重要な仮定と考え方}
+	\begin{enumerate}
+		\item 完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の最大化は、\color{red}$\ln p(\bm{X} | \bm{\theta})$の最大化よりも、簡単\normalcolor であると仮定
+		\newline
+		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を\color{red}最大化したい\normalcolor が、$\bm{Z}$に関する情報は$\ln p(\bm{Z} | \bm{X}, \bm{\theta})$からしか得られない
+		\newline
+		\item そのため、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$は使えない
+		\newline
+		\item そこで、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$による、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の\color{red}期待値を最大化\normalcolor することを考える
+		\newline
+		\item これが、EMアルゴリズムの考え方である
+	\end{enumerate}
+\end{block}
+
+\end{frame}
+
+\begin{frame}{EMアルゴリズムの解釈}
+
+\begin{itemize}
+	\item EMアルゴリズムへの落とし込み
+	\begin{itemize}
+		\item パラメータ$\bm{\theta}$を適当に初期化する
+		\newline
+		\item \alert{Eステップ}では、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$を、現在のパラメータ$\bm{\theta}^\mathrm{old}$を使って求める
+		\item $p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$を、Mステップでの期待値の計算に使う
+		\newline
+		\item \alert{Mステップ}では、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$に関する期待値$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$を計算
+		\begin{equation}
+			\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old}) = \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta})
+		\end{equation}
+		連続潜在変数の場合は次のようになる
+		\begin{equation}
+			\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old}) = \int p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}) d\bm{Z}
+		\end{equation}
+		
+		\item 上式において、$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$におけるパラメータ$\bm{\theta}^\mathrm{old}$は、\alert{変数ではなく定数であることに注意}
+		\newline
+		
+		\item 更に、$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$を$\bm{\theta}$について最大化することで、新たなパラメータの推定値$\bm{\theta}^\mathrm{new}$を得る
+		\begin{equation}
+			\bm{\theta}^\mathrm{new} = \argmax_{\bm{\theta}} \mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})
+		\end{equation}
+	\end{itemize} \
+	
+	\item 注意点
+	\begin{itemize}
+		\item $\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$において、対数$\ln$は、\color{red}同時分布$p(\bm{X}, \bm{Z} | \bm{\theta})$に直接作用している\normalcolor ことに注意
+		\item これにより、期待値の計算が簡単になることが期待される
+	\end{itemize} \
+	
+	\item なぜ事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$についての期待値なのか
+	\begin{itemize}
+		\item 幾分恣意的にみえるが、後ほど、期待値を取ることの正当性が明らかになる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{EMアルゴリズムの解釈}
+
+\begin{block}{一般のEMアルゴリズム}
+	\begin{itemize}
+		\item 観測変数$\bm{X}$と、潜在変数$\bm{Z}$の同時分布$p(\bm{X}, \bm{Z} | \bm{\theta})$が与えられているとする
+		\item 目的は、尤度関数$p(\bm{X} | \bm{\theta})$を、パラメータ$\bm{\theta}$について最大化することである
+	\end{itemize}
+\end{block}
+
+\begin{enumerate}
+	\item パラメータを$\bm{\theta}^\mathrm{old}$に初期化する
+	\item \alert{Eステップ}: 事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$を計算する \label{enum:general-em-e-step}
+	\newline
+	\item \alert{Mステップ}: 次式で与えられる$\bm{\theta}^\mathrm{new}$を計算する
+	\begin{equation}
+		\bm{\theta}^\mathrm{new} = \argmax_{\bm{\theta}} \mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})
+	\end{equation}
+	但し
+	\begin{equation}
+		\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old}) = \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta})
+	\end{equation}
+	
+	\item 対数尤度の変化量、あるいはパラメータの変化量をみて、収束性を判定
+	\item 収束条件を満たしていなければ、(\ref{enum:general-em-e-step})に戻る
+	\begin{equation}
+		\bm{\theta}^\mathrm{old} \leftarrow \bm{\theta}^\mathrm{new}
+	\end{equation}
+\end{enumerate}
+
+\end{frame}
+
+\subsection{混合ガウス分布の再解釈}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item 先程のEMアルゴリズムの解釈で、混合ガウス分布を見直す
+	\newline
+	
+	\item これまでの話の流れ
+	\begin{itemize}
+		\item 目的は、対数尤度関数$\ln p(\bm{X} | \bm{\theta})$の最大化であった
+		\item しかし、対数の中に総和が出現するため、最尤推定が困難であった	
+		\item そこで、離散潜在変数$\bm{Z}$を導入し、完全データ集合$\left\{ \bm{X}, \bm{Z} \right\}$に関する尤度の最大化を考える
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item 完全データ集合$\left\{ \bm{X}, \bm{Z} \right\}$に関する尤度の最大化
+	\begin{itemize}
+		\item 完全データ尤度関数$p(\bm{X}, \bm{Z} | \bm{\theta})$は次のようになる
+		\begin{eqnarray}
+			&& p(\bm{X}, \bm{Z} | \bm{\theta}) \nonumber \\
+			&=& p(\bm{Z} | \bm{\theta}) p(\bm{X} | \bm{Z}, \bm{\theta}) \nonumber \\
+			&=& \prod_i p(\bm{z}_i | \bm{\theta}) p(\bm{x}_i | \bm{z}_i, \bm{\theta}) \nonumber \\
+			&=& \prod_i \left( \prod_k \pi_k^{z_{ik}} \right) \left( \prod_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)^{z_{ik}} \right) \nonumber \\
+			&=& \prod_i \prod_k \pi_k^{z_{ik}} \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)^{z_{ik}} \nonumber \\
+			&=& \prod_i \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}
+		\end{eqnarray} \
+		
+		\item ここで、データ点$\bm{x}_i$に対応する潜在変数を$\bm{z}_i$、また$\bm{z}_i$の$k$番目の要素を$z_{ik}$とする
+		\newline
+		
+		\item データ点$\bm{x}_i, \bm{z}_i$は、$p(\bm{X}, \bm{Z} | \bm{\theta})$から独立にサンプルされているとする(このとき、要素ごとの積として書ける)
+		\newline
+		
+		\item 対数を取ると次のようになる
+		\begin{eqnarray}
+			&& \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \nonumber \\
+			&=& \ln \left( \prod_i \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}} \right) \nonumber \\
+			&=& \sum_i \sum_k \ln \left( \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}} \right) \nonumber \\
+			&=& \sum_i \sum_k z_{ik} \ln \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \sum_k z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)
+		\end{eqnarray}
+		
+		\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を、元々最大化しようとしていた$\ln p(\bm{X} | \bm{\theta})$と比較する
+		\begin{equation}
+			\ln p(\bm{X} | \bm{\theta}) = \sum_i \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)
+		\end{equation}
+		
+		\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$と$\ln p(\bm{X} | \bm{\theta})$を比較すると、対数$\ln$と、総和$\displaystyle \sum_k$の、\alert{順番が入れ替わっている}
+		\item そして、対数$\ln$が、ガウス分布$\mathcal{N}(\bm{x} | \bm{\mu}, \bm{\Sigma})$に\alert{直接作用している}
+		\newline
+		\item よって、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の最大化は、$\ln p(\bm{X} | \bm{\theta})$の最大化よりも、\alert{遥かに容易である} (そして、パラメータは\alert{陽な形で解ける})
+		\newline
+		\item そこで、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化するようなパラメータを求めてみる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の$\bm{\mu}_k$に関する最大化
+	\begin{itemize}
+		\item 以下のように、$\bm{\mu}_k$で微分して$0$とおけば、簡単に解ける
+		\item ガウス分布の微分については、先程のEMアルゴリズムの導出時に求めたものを利用している
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\mu}_k} \left( \sum_i \sum_k z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \right) \nonumber \\
+			&=& \sum_i \frac{\partial}{\partial \bm{\mu}_k} \left( \sum_k z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \right) \nonumber \\
+			&=& \sum_i \frac{\partial}{\partial \bm{\mu}_k} z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \bm{\mu}_k} \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \bm{\mu}_k} \ln \left( \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \right. \nonumber \\
+			&& \qquad \left. \exp \left\{ -\frac{1}{2} \left( \bm{x}_i - \bm{\mu}_k \right)^T \bm{\Sigma}_k^{-1} \left( \bm{x}_i - \bm{\mu}_k \right) \right\} \right) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \bm{\mu}_k} \left( -\frac{D}{2} \ln 2\pi - \frac{1}{2} \ln |\bm{\Sigma}_k| \right. \nonumber \\
+			&& \qquad \left. - \frac{1}{2} \left( \bm{x}_i - \bm{\mu}_k \right)^T \bm{\Sigma}_k^{-1} \left( \bm{x}_i - \bm{\mu}_k \right) \right) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \bm{\mu}_k} \left( - \frac{1}{2} \left( \bm{x}_i - \bm{\mu}_k \right)^T \bm{\Sigma}_k^{-1} \left( \bm{x}_i - \bm{\mu}_k \right) \right) \nonumber \\
+			&=& \sum_i z_{ik} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) = 0
+		\end{eqnarray}
+		これより
+		\begin{equation}
+			\sum_i z_{ik} \bm{\Sigma}_k^{-1} \bm{\mu}_k = \sum_i z_{ik} \bm{\Sigma}_k^{-1} \bm{x}_i
+		\end{equation}
+		であるから、両辺に左から$\bm{\Sigma}_k$を掛けて
+		\begin{eqnarray}
+			&& \sum_i z_{ik} \bm{\mu}_k = \sum_i z_{ik} \bm{x}_i \nonumber \\
+			&& \bm{\mu}_k \sum_i z_{ik} = \sum_i z_{ik} \bm{x}_i \nonumber \\
+			&& \bm{\mu}_k = \frac{1}{\sum_i z_{ik}} \sum_i z_{ik} \bm{x}_i
+		\end{eqnarray}
+		のようになる
+		\newline
+		
+		\item 上式をみると、完全データ$\left\{ \bm{X}, \bm{Z} \right\}$について、$\bm{\mu}_k$は陽な形で求まっていることが分かる
+		\item 但し実際は$\bm{Z}$が分からないので、$z_{ik}$をどうにかして得る必要がある
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の$\bm{\Sigma}_k$に関する最大化
+	\begin{itemize}
+		\item $\bm{\Sigma}_k$について微分して$0$とおくと、次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \bm{\Sigma}_k} \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \bm{\Sigma}_k} \left( -\frac{1}{2} \ln |\bm{\Sigma}_k| - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right) \nonumber \\
+			&=& \sum_i z_{ik} \left( -\frac{1}{2} \left( \bm{\Sigma}_k^{-1} \right)^T + \frac{1}{2} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} \right) \nonumber \\
+			&=& \frac{1}{2} \sum_i z_{ik} \left( - \bm{\Sigma}_k^{-1} + \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} \right) \\
+			&=& 0 \nonumber
+		\end{eqnarray}
+		となる
+		\item ここで、以下の微分公式を用いた
+		\begin{equation}
+			\frac{\partial}{\partial \bm{X}} \ln |\bm{X}| = \left( \bm{X}^{-1} \right)^T
+		\end{equation}
+		\item これより
+		\begin{equation}
+			\sum_i z_{ik} \bm{\Sigma}_k^{-1} = \sum_i z_{ik} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1}
+		\end{equation}
+		であるから、両辺に左右から$\bm{\Sigma}_k$を掛けて
+		\begin{eqnarray}
+			&& \sum_i z_{ik} \bm{\Sigma}_k = \sum_i z_{ik} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \nonumber \\
+			&& \bm{\Sigma}_k \sum_i z_{ik} = \sum_i z_{ik} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \nonumber \\
+			&& \bm{\Sigma}_k = \frac{1}{\sum_i z_{ik}} \sum_i z_{ik} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T
+		\end{eqnarray}
+		のようになる
+		
+		\item 上式をみても、やはり、完全データ$\left\{ \bm{X}, \bm{Z} \right\}$について、$\bm{\Sigma}_k$は陽な形で求まっていることが分かる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の$\pi_k$に関する最大化
+	\begin{itemize}
+		\item $\sum_k pi_k = 1$という制約条件を考慮し、ラグランジュの未定乗数法で解く
+		\item 従って、以下の量を最大化する
+		\begin{equation}
+			\ln p(\bm{X}, \bm{Z} | \bm{\theta}) + \lambda \left( \sum_k \pi_k - 1 \right)
+		\end{equation}
+		
+		\item $\pi_k$について微分して$0$とおくと、次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \pi_k} \left( \ln p(\bm{X}, \bm{Z} | \bm{\theta}) + \lambda \left( \sum_k \pi_k - 1 \right) \right) \nonumber \\
+			&=& \frac{\partial}{\partial \pi_k} \left( \sum_i \sum_k z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) + \lambda \left( \sum_k \pi_k - 1 \right) \right) \nonumber \\
+			&=& \sum_i z_{ik} \frac{\partial}{\partial \pi_k} \ln \pi_k + \lambda \nonumber \\
+			&=& \sum_i z_{ik} \frac{1}{\pi_k} + \lambda = 0
+		\end{eqnarray}
+		
+		\item これより、両辺に$\pi_k$を掛けて
+		\begin{equation}
+			\sum_i z_{ik} + \lambda \pi_k = 0
+		\end{equation}
+		全ての$k$について総和を取ると
+		\begin{eqnarray}
+			&& \sum_k \sum_i z_{ik} + \sum_k \lambda \pi_k = 0 \nonumber \\
+			&& \sum_i \left( \sum_k z_{ik} \right) + \lambda \sum_k \pi_k = 0 \nonumber \\
+			&& \sum_i 1 + \lambda = 0 \nonumber \\
+			&& N + \lambda = 0 \nonumber \\
+			&& \therefore \lambda = -N
+		\end{eqnarray}
+		
+		\item よって
+		\begin{eqnarray}
+			&& \sum_i z_{ik} \frac{1}{\pi_k} - N = 0 \nonumber \\
+			&& \sum_i z_{ik} - N \pi_k = 0 \nonumber \\
+			&& N \pi_k = \sum_i z_{ik} \nonumber \\
+			&& \therefore \pi_k = \frac{1}{N} \sum_i z_{ik}
+		\end{eqnarray}
+		
+		\item $\pi_k$も、完全データ(特に潜在変数)が与えられていれば、陽な形で求まる
+		\item EMアルゴリズムにおける$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の更新式は、ここで求めた式の$z_{ik}$を、負担率$\gamma(z_{ik})$にそのまま置き換えたものである
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item 事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$に関する期待値の計算
+	\begin{itemize}
+		\item 完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の最大化は、陽な形で解けた
+		\item これらの全ての式には$z_{ik}$が登場したが、実際には\alert{潜在変数は分からない}ので、$z_{ik}$を何かで代用しなければならない
+		\newline
+		\item 結局、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$に関する期待値を考えるしかない
+		\newline
+		\item 事後確率分布は次のように書ける
+		\begin{eqnarray}
+			&& p(\bm{z}_i | \bm{x}_i, \bm{\theta}) \nonumber \\
+			&=& \frac{p(\bm{x}_i | \bm{z}_i, \bm{\theta}) p(\bm{z}_i | \bm{\theta})}{p(\bm{x}_i | \bm{\theta})} \\
+			&\propto& p(\bm{x}_i | \bm{z}_i, \bm{\theta}) p(\bm{z}_i | \bm{\theta}) \\
+			&& \qquad (\because \text{$p(\bm{x}_i | \bm{\theta})$は、$\bm{z}_i$には依存しない定数項}) \nonumber \\
+			&=& \left( \prod_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)^{z_{ik}} \right) \left( \prod_k \pi_{k}^{z_{ik}} \right) \nonumber \\
+			&=& \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}
+		\end{eqnarray}
+		以上より
+		\begin{equation}
+			p(\bm{z}_i | \bm{x}_i, \bm{\theta}) \propto \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}
+		\end{equation}
+		であるので、$p(\bm{Z} | \bm{X}, \bm{\theta})$は
+		\begin{equation}
+			p(\bm{Z} | \bm{X}, \bm{\theta}) \propto \prod_i \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}
+		\end{equation}
+		
+		\item $p(\bm{z}_i | \bm{x}_i, \bm{\theta})$を等式で表すためには、$\bm{z}_i$で総和を取って$1$になる(確率としての条件を満たす)ように、\alert{正規化すればよい}
+		\begin{equation}
+			p(\bm{z}_i | \bm{x}_i, \bm{\theta}) = \frac{\displaystyle \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}}{\displaystyle \sum_{\bm{z}_i} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}}
+		\end{equation}
+		
+		\item まずは、事後確率$p(\bm{z}_i | \bm{x}_i, \bm{\theta})$に関する、$z_{ik}$の期待値を求めてみる
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i, \bm{\theta})} \left[ z_{ik} \right] \nonumber \\
+			&=& \sum_{\bm{z}_i} z_{ik} p(\bm{z}_i | \bm{x}_i, \bm{\theta}) \nonumber \\
+			&=& \sum_{\bm{z}_i} z_{ik} \frac{\displaystyle \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}}{\displaystyle \sum_{\bm{z}_i} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}}
+		\end{eqnarray}
+		
+		\item ここで
+		\begin{equation}
+			\sum_{\bm{z}_i} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}} = \sum_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)
+		\end{equation}
+		と書けることに注意する
+		\newline
+		
+		\item $\bm{z}_i$は、\alert{1-of-K符号化法}で表現されている
+		\item $\prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}$は、$z_{ik} = 1$の場合、$j \neq k$に対して$z_{ij} = 0$であるから、$\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)$という単一の項として書ける
+		\item 全ての$\bm{z}_i$についての総和は、\color{red}$\bm{z}_i$の中で、要素が1になるインデックス$k$についての総和\normalcolor を意味する
+		\newline
+		
+		\item また
+		\begin{equation}
+			\sum_{\bm{z}_i} z_{ik} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}} = \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)
+		\end{equation}
+		であることにも注意する
+		\newline
+		
+		\item $\displaystyle \sum_{\bm{z}_i}$の総和の中身は、$\bm{z}_i$が$z_{ik} = 1$となるとき以外は、$0$である(総和の中に$z_{ik}$があるため)
+		\item 従って、$\bm{z}_i$が$z_{ik} = 1$となるときの項$\prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}$、即ち$\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)$だけが出現する
+		\newline
+		
+		\item これより
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i, \bm{\theta})}(z_{ik}) \nonumber \\
+			&=& \frac{\displaystyle \sum_{\bm{z}_i} z_{ik} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}}{\displaystyle \sum_{\bm{z}_i} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}} \nonumber \\
+			&=& \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \equiv \gamma(z_{ik})
+		\end{eqnarray}
+		であるから、データ点$\bm{x}_i$に対する、$k$番目のガウス要素の\alert{負担率に一致}
+		\newline
+		
+		\item これより、事後確率$p(\bm{Z} | \bm{X}, \bm{\theta})$に関する、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の期待値は
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{Z} \sim p(\bm{Z} | \bm{X}, \bm{\theta})} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] \nonumber \\
+			&=& \mathbb{E}_{\bm{Z} \sim p(\bm{Z} | \bm{X}, \bm{\theta})} \left[ \sum_i \sum_k z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \right] \nonumber \\
+			&=& \sum_i \sum_k \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i, \bm{\theta})} \left[ z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \right] \\
+			&=& \sum_i \sum_k \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i, \bm{\theta})} \left[ z_{ik} \right] \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \\
+			&=& \sum_i \sum_k \gamma(z_{ik}) \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)
+		\end{eqnarray}
+		である
+		\newline
+		
+		\item これは$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$において、$z_{ik}$を$\gamma(z_{ik})$に置き換えたものと等しい
+		\begin{equation}
+			\ln p(\bm{X}, \bm{Z} | \bm{\theta}) = \sum_i \sum_k z_{ik} \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)
+		\end{equation}
+		
+		\item 先ほどは、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化するような、パラメータ$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の式を導出した
+		\item これらの式について、$z_{ik}$を$\gamma(z_{ik})$に置き換えれば、そのまま期待値を最大化する式として使える
+		\newline
+		\item $\gamma(z_{ik})$に置き換えた式は、\alert{EMアルゴリズムにおける更新式と一致}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布の再解釈}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item 対数尤度関数$\ln p(\bm{X} | \bm{\theta})$の最大化よりも、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の最大化の方が簡単であると仮定した
+		\newline
+		\item この仮定は、混合ガウス分布の場合について成り立っていた
+		\newline
+		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の最大化を考えた
+		\newline
+		\item しかし$\bm{Z}$に関する情報がないので、代わりに、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$による、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の\alert{期待値を最大化}しようと考えるのが、EMアルゴリズムであった
+		\newline
+		\item 混合ガウス分布の場合について実際に試すと、期待値の最大化によって、パラメータの更新式が再び導出できた
+	\end{enumerate} \
+	
+	\framebreak
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item K-Means法と、混合ガウス分布に対するEMアルゴリズムを比較する
+		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、\color{red}$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化してもよい根拠\normalcolor を明らかにする
+		\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、$p(\bm{Z} | \bm{X}, \bm{\theta})$についての\alert{期待値を最大化する理由}を明らかにする
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{K-Means法との関連}
+
+\begin{frame}{K-Means法との関連}
+
+\begin{itemize}
+	\item K-Means法と、混合ガウス分布に対するEMアルゴリズムの関係
+	\begin{itemize}
+		\item K-Means法では、各データ点は、ただ一つのクラスタに割り当てられる (\alert{ハード割り当て})
+		\item EMアルゴリズムでは、事後確率$\gamma(z_{ik}) \equiv p(z_k = 1 | \bm{x}_i)$に基づいて、各データをソフトに割り当てる (\alert{ソフト割り当て})
+		\newline
+		\item K-Means法は、混合ガウス分布に対するEMアルゴリズムの、\alert{ある極限として得られる}
+	\end{itemize} \
+	
+	\framebreak
+	
+	\item K-Means法の導出
+	\begin{itemize}
+		\item 次のように、各ガウス分布の共分散行列が$\epsilon \bm{I}$で与えられる、混合ガウスモデル$p(\bm{x} | \bm{\theta})$を考える ($\epsilon$は定数とする)
+		\begin{eqnarray}
+			&& p(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+			&=& p(\bm{x} | \bm{\mu}_k, \epsilon \bm{I}) \nonumber \\
+			&=& \mathcal{N}(\bm{x} | \bm{\mu}_k, \epsilon \bm{I}) \nonumber \\
+			&=& \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\epsilon \bm{I}|^\frac{1}{2}} \exp \left\{ -\frac{1}{2} (\bm{x} - \bm{\mu}_k)^T (\epsilon \bm{I})^{-1} (\bm{x} - \bm{\mu}_k) \right\} \\
+			&=& \frac{1}{(2\pi \epsilon)^\frac{D}{2}} \exp \left\{ -\frac{1}{2\epsilon} (\bm{x} - \bm{\mu}_k)^T (\bm{x} - \bm{\mu}_k) \right\} \\
+			&& \qquad (\because |\epsilon \bm{I}|^\frac{1}{2} = \left( \epsilon^D |\bm{I}| \right)^\frac{1}{2} = \left( \epsilon^D \right)^\frac{1}{2} = \epsilon^\frac{D}{2}) \nonumber \\
+			&=& \frac{1}{(2\pi \epsilon)^\frac{D}{2}} \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_k ||^2 \right\}
+		\end{eqnarray}
+		
+		\begin{eqnarray}
+			p(\bm{x} | \bm{\theta}) &=& \sum_k \pi_k p(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) \\
+			&=& \sum_k \pi_k \frac{1}{(2\pi \epsilon)^\frac{D}{2}} \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_k ||^2 \right\}
+		\end{eqnarray}
+		
+		\item この混合ガウスモデルについて、EMアルゴリズムを実行する
+		\newline
+		
+		\item 最初に、データ点$\bm{x}_i$に対する、$k$番目のガウス要素の負担率$\gamma(z_{ik})$を求めて、$\epsilon \to 0$についての極限を取ってみる
+		\begin{eqnarray}
+			\gamma(z_{ik}) &=& \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_j \pi_j \mathcal{N}(\bm{x}_i | \bm{\mu}_j, \bm{\Sigma}_j)} \nonumber \\
+			&=& \frac{\pi_k \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_k ||^2 \right\}}{\sum_j \pi_j \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_j ||^2 \right\}}
+		\end{eqnarray}
+		
+		\item 負担率は、以下のように変形できる
+		\begin{eqnarray}
+			&& \frac{\pi_k \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_k ||^2 \right\}}{\sum_j \pi_j \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_j ||^2 \right\}} \nonumber \\
+			&=& \left( \frac{\sum_j \pi_j \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\pi_k \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_k ||^2 \right\}} \right)^{-1} \nonumber \\
+			&=& \left( \sum_j \frac{\pi_j}{\pi_k} \frac{\left( \exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\} \right)^{\frac{1}{2\epsilon}}}{\left( \exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\} \right)^{\frac{1}{2\epsilon}}} \right)^{-1} \nonumber \\
+			&=& \left( \sum_j \frac{\pi_j}{\pi_k} \left( \frac{\exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\}} \right)^{\frac{1}{2\epsilon}} \right)^{-1} \nonumber \\
+			&=& \left( 1 + \sum_{j \neq k} \frac{\pi_j}{\pi_k} \left( \frac{\exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\}} \right)^{\frac{1}{2\epsilon}} \right)^{-1}
+		\end{eqnarray}
+		\newline
+		
+		\item ここで、$k^*$を次で定める
+		\begin{equation}
+			k^* = \argmin_j || \bm{x} - \bm{\mu}_j ||^2 = \argmax_j \left( - || \bm{x} - \bm{\mu}_j ||^2 \right)
+		\end{equation}
+		
+		$k = k^*$であるとき、以下の、$\epsilon \to 0$による極限
+		\begin{equation}
+			\lim_{\epsilon \to 0} \left( \sum_{j \neq k} \frac{\pi_j}{\pi_k} \left( \frac{\exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\}} \right)^{\frac{1}{2\epsilon}} \right)
+		\end{equation}
+		を考えると、全ての$j \neq k^*$について
+		\begin{equation}
+			\frac{\exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\}} < 1
+		\end{equation}
+		が成立するので
+		\begin{equation}
+			\lim_{\epsilon \to 0} \left( \sum_{j \neq k} \frac{\pi_j}{\pi_k} \left( \frac{\exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\}} \right)^{\frac{1}{2\epsilon}} \right) = 0
+		\end{equation}
+		である
+		\newline
+		
+		\item 従って、$k = k^*$のとき
+		\begin{eqnarray}
+			&& \lim_{\epsilon \to 0} \gamma(z_{ik}) \nonumber \\
+			&=& \lim_{\epsilon \to 0} \frac{\pi_k \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_k ||^2 \right\}}{\sum_j \pi_j \exp \left\{ -\frac{1}{2\epsilon} || \bm{x} - \bm{\mu}_j ||^2 \right\}} \nonumber \\
+			&=& \lim_{\epsilon \to 0} \left( 1 + \sum_{j \neq k} \frac{\pi_j}{\pi_k} \left( \frac{\exp \left\{ - || \bm{x} - \bm{\mu}_j ||^2 \right\}}{\exp \left\{ - || \bm{x} - \bm{\mu}_k ||^2 \right\}} \right)^{\frac{1}{2\epsilon}} \right)^{-1} \nonumber \\
+			&=& (1 + 0)^{-1} = 1
+		\end{eqnarray}
+		から、$\gamma(z_{ik}) \to 1 \ (\epsilon \to 0)$がいえる
+		\newline
+		
+		\item $k \neq k^*$のとき
+		\begin{equation}
+			1 = \sum_k \gamma(z_{ik}) = \gamma(z_{ik^*}) + \sum_{k \neq k^*} \gamma(z_{ik})
+		\end{equation}
+		であって、両辺の$\epsilon \to 0$による極限を取れば
+		\begin{eqnarray}
+			&& 1 = \lim_{\epsilon \to 0} \left( \gamma(z_{ik^*}) + \sum_{k \neq k^*} \gamma(z_{ik}) \right) \nonumber \\
+			&\Rightarrow& 1 = \lim_{\epsilon \to 0} \gamma(z_{ik^*}) + \lim_{\epsilon \to 0} \sum_{k \neq k^*} \gamma(z_{ik}) \nonumber \\
+			&\Rightarrow& 1 = 1 + \lim_{\epsilon \to 0} \sum_{k \neq k^*} \gamma(z_{ik})
+		\end{eqnarray}
+		となるから
+		\begin{equation}
+			\lim_{\epsilon \to 0} \sum_{k \neq k^*} \gamma(z_{ik}) = 0
+		\end{equation}
+		が明らかに成立するほか、以下の不等式が
+		\begin{equation}
+			0 \le \gamma(z_{ik}) \le \sum_{k \neq k^*} \gamma(z_{ik})
+		\end{equation}
+		$\gamma(z_{ik}) \ge 0$ゆえ成立するので($\gamma(z_{ik})$は確率値)、両辺の$\epsilon \to 0$による極限を再び取れば
+		\begin{equation}
+			0 \le \lim_{\epsilon \to 0} \gamma(z_{ik}) \le \lim_{\epsilon \to 0} \sum_{k \neq k^*} \gamma(z_{ik}) = 0
+		\end{equation}
+		従って、$k \neq k^*$の場合は
+		\begin{equation}
+			\lim_{\epsilon \to 0} \gamma(z_{ik}) = 0
+		\end{equation}
+		である
+		
+		\item これより、データ点$\bm{x}_i$に関する負担率$\gamma(z_{ik})$は、$1$に収束する$k^*$番目の負担率$\gamma(z_{ik^*})$を除き、全て$0$に収束する
+		\begin{eqnarray}
+			\gamma(z_{ik}) \equiv p(z_{ik} = 1 | \bm{x}_i) = \left\{ \begin{array}{ll}
+				1 & (k = k^* \text{の場合}) \\
+				0 & (\text{それ以外の場合}) \\
+				\end{array} \right.
+		\end{eqnarray}
+		
+		\item これは、$k^*$番目のクラスタに\alert{確率$1$で属する}ということ、即ち、クラスタ$k^*$への\alert{ハード割り当て}を意味する
+		\newline
+		\item $k^* = \argmin_j || \bm{x} - \bm{\mu}_j ||^2$であるから、結局、各データ点は、\color{red}平均ベクトル$\bm{\mu}$への二乗ユークリッド距離が最小となるクラスタ\normalcolor に割り当てることになる
+		\newline
+		\item $\gamma(z_{ik})$を$r_{ik}$に置き換えれば、EMアルゴリズムにおける$\bm{\mu}_k$の更新式は、K-Meansにおける平均ベクトルの更新式に帰着
+		\begin{eqnarray}
+			\text{K-Means}: && \bm{\mu}_k = \frac{1}{\sum_i \color{red}r_{ik}\normalcolor} \sum_i \color{red}r_{ik}\normalcolor \bm{x}_i \\
+			\text{EMアルゴリズム}: && \bm{\mu}_k = \frac{1}{\sum_i \color{red}\gamma(z_{ik})\normalcolor} \sum_i \color{red}\gamma(z_{ik})\normalcolor \bm{x}_i
+		\end{eqnarray}
+		
+		\item 従って、混合ガウスモデルのEMアルゴリズムにおいて、各ガウス分布の共分散行列を$\epsilon \bm{I}$としたとき、\color{red}$\epsilon \to 0$の極限を取ると、K-Means法が得られる\normalcolor
+	\end{itemize}
+	
+	\framebreak
+	
+	\item 期待完全データ対数尤度の計算
+	\begin{itemize}
+		\item $\mathbb{E}_{\bm{Z} \sim p(\bm{Z} | \bm{X}, \bm{\theta})} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right]$を計算する
+		\item 完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、事後確率$p(\bm{Z} | \bm{X}, \bm{\theta})$による期待値
+		\newline
+		\item 次のように計算する
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{Z} \sim p(\bm{Z} | \bm{X}, \bm{\theta})} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] \nonumber \\
+			&=& \sum_i \sum_k \gamma(z_{ik}) \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \sum_k \gamma(z_{ik}) \left( \ln \pi_k + \ln \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \epsilon \bm{I}) \right) \nonumber \\
+			&=& \sum_i \sum_k \gamma(z_{ik}) \left( \ln \pi_k + \ln \left( \frac{1}{(2\pi \epsilon)^\frac{D}{2}} \exp \left\{ -\frac{1}{2\epsilon} || \bm{x}_i - \bm{\mu}_k ||^2 \right\} \right) \right) \nonumber \\
+			&=& \sum_i \sum_k \gamma(z_{ik}) \left( \ln \pi_k - \frac{D}{2} \ln (2\pi \epsilon) - \frac{1}{2\epsilon} || \bm{x}_i - \bm{\mu}_k ||^2 \right)
+		\end{eqnarray}
+		
+		\item 両辺に$\epsilon$を掛けると
+		\begin{eqnarray}
+			&& \epsilon \cdot \mathbb{E}_{\bm{Z} \sim p(\bm{Z} | \bm{X}, \bm{\theta})} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] \nonumber \\
+			&=& \sum_i \sum_k \gamma(z_{ik}) \left( \epsilon \ln \pi_k - \right. \nonumber \\
+			&& \qquad \left. \frac{D}{2} \epsilon \ln (2\pi \epsilon) - \frac{1}{2} || \bm{x}_i - \bm{\mu}_k ||^2 \right)
+		\end{eqnarray}
+		
+		\item $\epsilon \to 0$の極限を取ると
+		\begin{equation}
+			\gamma(z_{ik}) \to r_{ik}, \quad \epsilon \ln \pi_k \to 0, \quad \epsilon \ln (2\pi \epsilon) \to 0
+		\end{equation}
+		であるから
+		\begin{eqnarray}
+			&& \lim_{\epsilon \to 0} \epsilon \cdot \mathbb{E}_{\bm{Z} \sim p(\bm{Z} | \bm{X}, \bm{\theta})} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] \nonumber \\
+			&=& \sum_i \sum_k r_{ik} \left( -\frac{1}{2} || \bm{x}_i - \bm{\mu}_k ||^2 \right) \nonumber \\
+			&=& -\frac{1}{2} \sum_i \sum_k r_{ik} || \bm{x}_i - \bm{\mu}_k ||^2 \\
+			&=& -J
+		\end{eqnarray}
+		
+		\item よって、期待完全データ対数尤度$\mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right]$の最大化は、\color{red}K-Meansにおける目的関数$J$の最小化と同等である\normalcolor
+		\newline
+	\end{itemize}
+	
+	\framebreak
+	
+	\item その他のパラメータ
+	\begin{itemize}
+		\item K-Means法では、各クラスタの分散は推定しない
+		\item 実際に、混合ガウスモデルにおいて、各クラスタの共分散行列は$\epsilon \bm{I}$で固定した
+		\newline
+		\item 混合ガウスモデルの混合係数$\pi_k$の更新式は、次のようであった
+		\begin{equation}
+			\pi_k = \frac{\sum_i \gamma(z_{ik})}{N}
+		\end{equation}
+		$\epsilon \to 0$の極限においては、$\gamma(z_{ik}) \to r_{ik}$であるから
+		\begin{equation}
+			\pi_k = \frac{\sum_i r_{ik}}{N} = \frac{N_k}{N}
+		\end{equation}
+		
+		\item これは、$\pi_k$の値を、$k$番目のクラスタに割り当てられる、データ数の割合に設定することを意味している
+		\item $\pi_k$の値はK-Means法においては、もはや何の意味も持たない
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{一般のEMアルゴリズム}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item EMアルゴリズムの目的 (再掲)
+	\begin{itemize}
+		\item 潜在変数をもつ確率モデルについて、パラメータの最尤解を求める
+	\end{itemize} \
+	
+	\item 一般的なEMアルゴリズムの取り扱い
+	\begin{itemize}
+		\item これまでは、混合ガウスモデルに対して、EMアルゴリズムを発見的に導いた
+		\item ここでは、EMアルゴリズムが、確かに尤度関数$\ln p(\bm{X} | \bm{\theta})$を\alert{極大化}することを証明する
+		\item 後述する\alert{変分推論}の基礎をなす部分
+	\end{itemize} \
+	
+	\item 尤度関数$p(\bm{X} | \bm{\theta})$の記述
+	\begin{itemize}
+		\item 全ての観測変数と、潜在変数をそれぞれ$\bm{X}, \bm{Z}$と表す
+		\item 確率モデルの全てのパラメータの組を、$\bm{\theta}$と表す
+		\item 同時確率分布を$p(\bm{X}, \bm{Z} | \bm{\theta})$とすると、尤度関数は次のようになる
+		\begin{equation}
+			p(\bm{X} | \bm{\theta}) = \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta})
+		\end{equation}
+		
+		\item 連続潜在変数の場合は、次のように、総和を積分に置き換えればよい
+		\begin{equation}
+			p(\bm{X} | \bm{\theta}) = \int_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}) d\bm{Z}
+		\end{equation}
+		
+		\item ここでは、連続潜在変数の場合を考える
+	\end{itemize} \
+	
+	\item \alert{重要な仮定}
+	\begin{itemize}
+		\item $\ln p(\bm{X} | \bm{\theta})$の最大化よりも、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の最大化の方が、容易である
+		\newline
+		\item 以前に見た尤度関数$\ln p(\bm{X} | \bm{\theta})$では、対数の中に総和が含まれており(\alert{log-sum})、複雑な形をしていた
+		\item $\bm{Z}$についての情報を加えることで、尤度関数からlog-sumの構造を消すことができた
+		\item 対数$\ln$がガウス分布に直接作用するようになったため、尤度関数の形が簡単になった
+	\end{itemize} \
+	
+	\item EMアルゴリズムで行うこと
+	\begin{itemize}
+		\item $\ln p(\bm{X} | \bm{\theta})$ではなく$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最適化しようとしたが、$\bm{Z}$に関する情報がないので、それはできない
+		\item そこで、事後確率$p(\bm{Z} | \bm{X}, \bm{\theta})$による、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の期待値$\mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right]$を最大化する
+		\newline
+		\item これ以降の議論のために、\alert{イェンセンの不等式}、\alert{エントロピー}、\alert{KLダイバージェンス}について確認しておく
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item イェンセンの不等式
+	\begin{itemize}
+		\item \alert{凸関数}$f(x)$は、任意の点集合$\left\{ x_i \right\}$について以下を満たす
+		\begin{equation}
+			f \left( \sum_i \lambda_i x_i \right) \le \sum_i \lambda_i f(x_i)
+		\end{equation}
+		\item ここで、\color{red}$\lambda_i \ge 0, \ \sum_i \lambda_i = 1$\normalcolor であるとする
+		\newline
+		\item $\lambda_i$を、値$\left\{ x_i \right\}$を取る離散確率変数$x$上の確率分布$p(x)$と解釈すると
+		\begin{eqnarray}
+			f \left( \sum_i p(x_i) x_i \right) &\le& \sum_i p(x_i) f(x_i) \nonumber \\
+			f \left( \mathbb{E}[x] \right) &\le& \mathbb{E}[f(x)]
+		\end{eqnarray}
+		
+		\item $x$が連続変数であれば、イェンセンの不等式は次のように書ける
+		\begin{equation}
+			\color{red}f \left( \int \bm{x} p(\bm{x}) d\bm{x} \right) \le \int f(\bm{x}) p(\bm{x}) d\bm{x}\normalcolor
+		\end{equation}
+		例えば、$f(x) = -\ln x$は凸関数であるから
+		\begin{equation}
+			-\ln \left( \int \bm{x} p(\bm{x}) d\bm{x} \right) \le \int \left( - \ln \bm{x} \right) p(\bm{x}) d\bm{x}
+		\end{equation}
+		よって
+		\begin{equation}
+			\color{red}\ln \left( \int \bm{x} p(\bm{x}) d\bm{x} \right) \ge \int \left( \ln \bm{x} \right) p(\bm{x}) d\bm{x}\normalcolor
+		\end{equation}
+	\end{itemize}
+	
+	\framebreak
+	
+	\item エントロピー
+	\begin{itemize}
+		\item 確率分布$p(\bm{x})$について、エントロピーは以下で定義される
+		\begin{equation}
+			\mathrm{H} [p] = -\int p(\bm{x}) \ln p(\bm{x}) d\bm{x}
+		\end{equation}
+		\item エントロピーは、確率分布$p(\bm{x})$を入力として、上記の量を返す、\alert{汎関数}(Functional)である
+		\item 汎関数とは、入力として関数をとり、出力として汎関数の値を返すものである
+	\end{itemize}
+	
+	\framebreak
+	
+	\item KLダイバージェンス
+	\begin{itemize}
+		\item 確率分布$p(\bm{x})$と$q(\bm{x})$の間の、カルバック-ライブラーダイバージェンスを、$\KL (p || q)$と表す
+		\item 確率分布$p(\bm{x})$と$q(\bm{x})$の間の、(擬似的な)\alert{距離}を表す指標である
+		\begin{equation}
+			\KL (p || q) = -\int p(\bm{x}) \ln \left\{ \frac{q(\bm{x})}{p(\bm{x})} \right\} d\bm{x}
+		\end{equation}
+		
+		\item $\KL (p || q) \ge 0$であり、等号成立は$p(\bm{x}) = q(\bm{x})$のときに限る
+		\item 2つの分布が完全に同一であれば、KLダイバージェンスは$0$で最小値を取る
+		\newline
+		\item また厳密には距離ではないため、対称性は成立しない
+		\item 従って、一般に$\KL (p || q) \neq \KL (q || p)$となる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item $\ln p(\bm{X} | \bm{\theta})$の分解
+	\begin{itemize}
+		\item EMアルゴリズムについて考察するために、まずは$\ln p(\bm{X} | \bm{\theta})$を分解してみよう
+		\newline
+		\item 潜在変数についての分布を$q(\bm{Z})$とおく
+		\item $q(\bm{Z})$の設定の仕方によらず、$\ln p(\bm{X} | \bm{\theta})$を次のように分解できる
+		\begin{equation}
+			\ln p(\bm{X} | \bm{\theta}) = \mathcal{L}(q, \bm{\theta}) + \KL (q || p)
+		\end{equation}
+		
+		\item $\mathcal{L}(q, \bm{\theta})$は、分布$q(\bm{Z})$の汎関数であり、かつパラメータ$\bm{\theta}$の関数である
+		\item $\KL (q || p)$は、確率分布$q(\bm{Z})$と$p(\bm{X} | \bm{\theta})$の間の、\alert{KLダイバージェンス}である
+		\newline
+		\item 分解は次のように行える
+		\begin{eqnarray}
+			\ln p(\bm{X} | \bm{\theta}) &=& \underbrace{\left( \sum_{\bm{Z}} q(\bm{Z}) \right)}_{=1} \ln p(\bm{X} | \bm{\theta}) \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln p(\bm{X} | \bm{\theta}) \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{p(\bm{Z} | \bm{X}, \bm{\theta})} \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln \left( \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \frac{q(\bm{Z})}{p(\bm{Z} | \bm{X}, \bm{\theta})} \right) \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} - \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X}, \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta}) + \KL (q || p)
+		\end{eqnarray}
+		
+		\item ここで$\mathcal{L}(q, \theta)$と$\KL (q || p)$は以下のように定義した
+		\begin{eqnarray}
+			\mathcal{L}(q, \bm{\theta}) &=& \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \\
+			\KL (q || p) &=& - \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X}, \bm{\theta})}{q(\bm{Z})}
+		\end{eqnarray}
+		
+		\item $\KL (q || p) \ge 0$ゆえ、以下の不等式を得る
+		\begin{equation}
+			\mathcal{L}(q, \bm{\theta}) \le \ln p(\bm{X} | \bm{\theta})
+		\end{equation}
+		
+		\item $\mathcal{L}(q, \bm{\theta})$は、$q(\bm{Z}), \bm{\theta}$によらず、常に$\ln p(\bm{X} | \bm{\theta})$の\alert{下界}をなす
+		\newline
+		\item EMアルゴリズムの各ステップについて見ていく
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.75,trim=2cm 16.5cm 1cm 2cm,page=471]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{$\ln p(\bm{X} | \bm{\theta})$の分解}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item EMアルゴリズムの概要
+	\begin{itemize}
+		\item EMアルゴリズムでは、$\ln p(\bm{X} | \bm{\theta})$の最尤解を求めるために、\alert{Eステップ}と\alert{Mステップ}の二段階の処理を、交互に繰り返す
+		\item パラメータの現在値を$\bm{\theta}^\mathrm{old}$とする
+	\end{itemize} \
+	
+	\item \alert{Eステップ}
+	\begin{itemize}
+		\item Eステップでは、下界$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$を、$\bm{\theta}^\mathrm{old}$を固定しながら、$q(\bm{Z})$について最大化する
+		\newline
+		\item この問題は、$\ln p(\bm{X} | \bm{\theta})$の分解をみれば簡単に解ける
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{\theta}^\mathrm{old}) \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{old}) + \KL (q || p) \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{old}) + \KL (q(\bm{Z}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})) \\
+			&& (\text{Eステップ前}) \nonumber
+		\end{eqnarray}
+		
+		\item 上式において、左辺の$\ln p(\bm{X} | \bm{\theta}^\mathrm{old})$は、\color{red}$q$には依存しない定数である\normalcolor
+		\newline
+		\item 従って、$q$について$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$を最大化するためには、$\KL (q || p)$を最小化するしかない
+		\item $\KL (q || p)$を最小化するためには、\color{red}$q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$とおいて\normalcolor 、$\KL (q || p) = 0$とすればよい ($\KL (q || p) \ge 0$であるから、最小値は$0$)
+		\newline
+		\item このとき、下界$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$は、対数尤度$\ln p(\bm{X} | \bm{\theta}^\mathrm{old})$に一致する
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{\theta}^\mathrm{old}) \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{old}) + \KL (q(\bm{Z}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})) \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{old}) + \KL (p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})) \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{old}) \\
+			&& (\text{Eステップ後}) \nonumber
+		\end{eqnarray}
+		\newline
+		\item 次の図\ref{fig:em-algorithm-e-step}にはEステップの概要が示されている
+		\newline
+		\item $\KL (q || p) = 0$となるように$q$を調節している
+		\item \color{blue}青線\normalcolor で示されている下界$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$が、\color{red}赤線\normalcolor で示されている対数尤度$\ln p(\bm{X} | \bm{\theta}^\mathrm{old})$のところまで、持ち上げられている
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.75,trim=2cm 16.5cm 1cm 2cm,page=472]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{EMアルゴリズムのEステップ}
+	\label{fig:em-algorithm-e-step}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item \alert{Mステップ}
+	\begin{itemize}
+		\item Mステップでは、下界$\mathcal{L}(q, \bm{\theta})$を、分布$q(\bm{Z})$を固定しながら、$\bm{\theta}$について最大化し、新たなパラメータ$\bm{\theta}^\mathrm{new}$を得る
+		\newline
+		\item Mステップは下界$\mathcal{L}$を増加させるが、$\KL (q || p) \ge 0$であるから、対数尤度$\ln p(\bm{X} | \bm{\theta})$も必然的に増加する
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{\theta}) \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta}) + \KL (q || p) \\
+			&=& \mathcal{L}(q, \bm{\theta}) + \KL (q(\bm{Z}) || p(\bm{Z} | \bm{X}, \bm{\theta})) \\
+			&=& \mathcal{L}(q, \bm{\theta}) + \KL (p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) || p(\bm{Z} | \bm{X}, \bm{\theta})) \\
+			&& (\text{Mステップ前}) \nonumber
+		\end{eqnarray}
+		
+		\item 分布$q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$は、古いパラメータ$\bm{\theta}^\mathrm{old}$によって決められており、\alert{Mステップの間は固定}されている
+		\newline
+		\item $\KL (q || p)$は、$q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$と$p(\bm{Z} | \bm{X}, \bm{\theta})$とのKLダイバージェンスである
+		\item $q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$と、Mステップ後の新しい事後分布$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})$とは\alert{一致しない}ため、$\KL (q || p) > 0$となる
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{\theta}^\mathrm{new}) \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{new}) + \KL (p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})) \\
+			&& (\text{Mステップ後}) \nonumber
+		\end{eqnarray}
+		
+		\item 対数尤度の増加量は、下界$\mathcal{L}$の増加量よりも大きくなる (図\ref{fig:em-algorithm-m-step})
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{\theta}^\mathrm{new}) - \ln p(\bm{X} | \bm{\theta}^\mathrm{old}) \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta}^\mathrm{new}) + \KL (p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})) - \nonumber \\
+			&& \qquad \mathcal{L}(q, \bm{\theta}^\mathrm{old}) \\
+			&=& \left( \mathcal{L}(q, \bm{\theta}^\mathrm{new}) - \mathcal{L}(q, \bm{\theta}^\mathrm{old}) \right) + \nonumber \\
+			&& \qquad \KL (p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})) \\
+			&\ge& \mathcal{L}(q, \bm{\theta}^\mathrm{new}) - \mathcal{L}(q, \bm{\theta}^\mathrm{old})
+		\end{eqnarray}
+		
+		\item 次の図\ref{fig:em-algorithm-m-step}にはMステップの概要が示されている
+		\newline
+		\item 下界$\mathcal{L}(q, \bm{\theta})$を、$q(\bm{Z})$を固定しつつ、$\bm{\theta}$について最大化している
+		\newline
+		\item \color{blue}青の点線\normalcolor で示されている下界$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$が、\color{blue}青の実線\normalcolor で示されている下界$\mathcal{L}(q, \bm{\theta}^\mathrm{new})$へと、持ち上げられている
+		\item \color{red}赤の点線\normalcolor で示される対数尤度$\ln p(\bm{X} | \bm{\theta}^\mathrm{old})$は、\color{red}赤の実線\normalcolor で示される対数尤度$\ln p(\bm{X} | \bm{\theta}^\mathrm{new})$へと、持ち上げられている
+		\newline
+		\item 新たに生じた$\KL (q || p)$によって、対数尤度の増加量は、下界$\mathcal{L}$の増加量よりも大きくなっている
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.75,trim=2cm 1cm 1cm 15.5cm,page=472]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{EMアルゴリズムのMステップ}
+	\label{fig:em-algorithm-m-step}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item Mステップで最大化される量
+	\begin{itemize}
+		\item Mステップでは下界$\mathcal{L}(q, \bm{\theta})$を、$q$を固定しつつ$\bm{\theta}$について最大化する
+		\item Mステップで最大化するのは、\alert{Eステップ後の下界}$\mathcal{L}(q, \bm{\theta})$であり、これは次のように表せる ($q(\bm{Z}) = p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})$である)
+		\begin{eqnarray}
+			&& \mathcal{L}(q, \bm{\theta}) \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})} \\
+			&=& \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}) - \nonumber \\
+			&& \qquad \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \\
+			&=& \mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old}) + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item 定数項は、単に分布$q(\bm{Z}) = p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})$のエントロピーであって、$\bm{\theta}$には依存しないため無視できる
+		\newline
+		\item Mステップで最大化される量は、結局、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$による期待値\color{red}$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$\normalcolor である
+		\newline
+		\item 最適化しようとしているパラメータ$\bm{\theta}$は、\alert{対数の中にしか現れない}
+		\item 同時分布$p(\bm{X}, \bm{Z} | \bm{\theta})$に対して\alert{対数が直接作用}するので、同時分布が例えばガウス分布であれば、対数と指数が打ち消されて、簡単な形になる
+		\newline
+		\item その結果として、不完全データ対数尤度関数$\ln p(\bm{X} | \bm{\theta})$の最適化よりも、\alert{非常に単純な手続きとなる}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item \alert{Eステップ}のまとめ
+	\begin{itemize}
+		\item 下界$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$を、\color{red}$\bm{\theta}^\mathrm{old}$を固定しつつ、$q$について最大化\normalcolor する
+		\item これは、単に$q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$とすればよい
+		\item 即ち、$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$を計算するだけである
+	\end{itemize} \
+	
+	\item \alert{Mステップ}のまとめ
+	\begin{itemize}
+		\item 下界$\mathcal{L}(q, \bm{\theta})$を、\color{red}$q$を固定しつつ、$\bm{\theta}$について最大化\normalcolor する
+		\item これは、期待値$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$を最大化するような、パラメータ$\bm{\theta}$を求めることに相当
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item 疑問に対する答え
+	\begin{itemize}
+		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化してよい根拠
+		\item そして、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の期待値を最大化してもよい理由
+		\newline
+		\item 期待値を取る操作は、式の導出の中で、極めて自然に現れた
+		\item 期待値$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$の最大化は、$\mathcal{L}(q, \bm{\theta})$の最大化と等価である
+		\item $\mathcal{L}(q, \bm{\theta})$は、$q$や$\bm{\theta}$によらず、常に$\ln p(\bm{X} | \bm{\theta})$の下界である
+		\item 下界を最大化することは、$\ln p(\bm{X} | \bm{\theta})$を徐々に大きくしていくことにつながる (図\ref{fig:em-algorithm-e-step}と図\ref{fig:em-algorithm-m-step}を参照)
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item パラメータの更新によって$\ln p(\bm{X} | \bm{\theta})$が常に大きくなることの補足
+	\begin{itemize}
+		\item 以下のように式変形を行う
+		\begin{eqnarray}
+			&& \left( \text{Mステップ後の}\ln p(\bm{X} | \bm{\theta}) \right) - \left( \text{Eステップ後の}\ln p(\bm{X} | \bm{\theta}) \right) \nonumber \\
+			&=& \ln p(\bm{X} | \bm{\theta}^\mathrm{new}) - \ln p(\bm{X} | \bm{\theta}^\mathrm{old}) \nonumber \\
+			&=& \ln \frac{p(\bm{X} | \bm{\theta}^\mathrm{new})}{p(\bm{X} | \bm{\theta}^\mathrm{old})} \nonumber \\
+			&=& \underbrace{\sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})}_{=1} \ln \frac{p(\bm{X} | \bm{\theta}^\mathrm{new})}{p(\bm{X} | \bm{\theta}^\mathrm{old})} \nonumber \\
+			&=& \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{new})}{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})} \frac{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})}{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})} \nonumber \\
+			&=& \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{new})}{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})} \frac{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})}{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})} \nonumber \\
+			&=& \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{new})}{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})} + \nonumber \\
+			&& \qquad \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})}{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})} \nonumber \\
+			&=& \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{new}) - \nonumber \\
+			&& \qquad \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) - \nonumber \\
+			&& \qquad \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})}{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new})} \nonumber \\
+			&=& \mathcal{Q}(\bm{\theta}^\mathrm{old}, \bm{\theta}^\mathrm{new}) - \mathcal{Q}(\bm{\theta}^\mathrm{old}, \bm{\theta}^\mathrm{old}) + \nonumber \\
+			&& \qquad \KL \left( p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) || p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{new}) \right) \\
+			&\ge& \mathcal{Q}(\bm{\theta}^\mathrm{old}, \bm{\theta}^\mathrm{new}) - \mathcal{Q}(\bm{\theta}^\mathrm{old}, \bm{\theta}^\mathrm{old}) \\
+			&\ge& 0 \nonumber
+		\end{eqnarray}
+		
+		\item 最後の変形は、Mステップでは$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$を、$\bm{\theta}$について最大化しているから、$\mathcal{Q}(\bm{\theta}^\mathrm{old}, \bm{\theta}^\mathrm{new}) \ge \mathcal{Q}(\bm{\theta}^\mathrm{old}, \bm{\theta}^\mathrm{old})$であることを利用
+		\newline
+		\item 更新によって$\ln p(\bm{X} | \bm{\theta})$は、\alert{収束していない限り常に大きくなる}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item $\ln p(\bm{X} | \bm{\theta})$の分解の導出の補足
+	\begin{itemize}
+		\item イェンセンの不等式を用いて導出してみよう
+		\begin{eqnarray}
+			\ln p(\bm{X} | \bm{\theta}) &=& \ln \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}) \nonumber \\
+			&=& \ln \sum_{\bm{Z}} q(\bm{Z}) \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&\ge& \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \mathcal{L}(q, \bm{\theta})
+		\end{eqnarray}
+		
+		\item 不等式の部分でイェンセンの不等式$\log (\mathbb{E}[x]) \le \mathbb{E}[\log x]$を用いた
+		\item これより、$\ln p(\bm{X} | \bm{\theta})$と$\mathcal{L}(q, \bm{\theta})$の差を調べると
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{\theta}) - \mathcal{L}(q, \bm{\theta}) \nonumber \\
+			&=& \ln p(\bm{X} | \bm{\theta}) - \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \underbrace{\sum_{\bm{Z}} q(\bm{Z})}_{=1} \ln p(\bm{X} | \bm{\theta}) - \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln p(\bm{X} | \bm{\theta}) - \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X}, \bm{\theta}) p(\bm{X} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln p(\bm{X} | \bm{\theta}) - \nonumber \\
+			&& \qquad \sum_{\bm{Z}} q(\bm{Z}) \left( \ln p(\bm{Z} | \bm{X}, \bm{\theta}) + \ln p(\bm{X} | \bm{\theta}) - \ln q(\bm{Z}) \right) \nonumber \\
+			&=& -\sum_{\bm{Z}} q(\bm{Z}) \left( \ln p(\bm{Z} | \bm{X}, \bm{\theta}) - \ln q(\bm{Z}) \right) \nonumber \\
+			&=& -\sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X}, \bm{\theta})}{q(\bm{Z})} \nonumber \\
+			&=& \KL (q || p)
+		\end{eqnarray}
+		ゆえ、$\KL (q || p)$となることが分かったので
+		\begin{equation}
+			\ln p(\bm{X} | \bm{\theta}) = \mathcal{L}(q, \bm{\theta}) + \KL (q || p)
+		\end{equation}
+		のように分解できることが分かる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item パラメータ空間での図示
+	\begin{itemize}
+		\item EMアルゴリズムは、パラメータ空間でも視覚化できる (図\ref{fig:em-algorithm-visualization})
+		\newline
+		\item \color{red}赤の実線\normalcolor は、最大化したい対象である、不完全データ対数尤度関数$\ln p(\bm{X} | \bm{\theta})$を表す
+	\end{itemize} \
+	
+	\item Eステップ
+	\begin{itemize}
+		\item パラメータの初期値$\bm{\theta}^\mathrm{old}$から始めて、最初のEステップでは、潜在変数の事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$を計算
+		\item このとき、\color{blue}青の実線\normalcolor で示す下界$\mathcal{L}(q, \bm{\theta}^\mathrm{old})$が$q$について更新され、下界$\mathcal{L}$は、$\ln p(\bm{X} | \bm{\theta})$と$\bm{\theta}^\mathrm{old}$において一致する
+		\newline
+		\item 下界$\mathcal{L}$の曲線は、$\bm{\theta}^\mathrm{old}$において$\ln p(\bm{X} | \bm{\theta})$と\alert{接する}ことに注意する
+		\item 下界$\mathcal{L}$と対数尤度$\ln p(\bm{X} | \bm{\theta})$は、$\bm{\theta}^\mathrm{old}$において\alert{同じ勾配を持つ}
+	\end{itemize} \
+	
+	\item Mステップ
+	\begin{itemize}
+		\item 下界$\mathcal{L}$が\alert{凹関数}で、唯一の最大値をもつとする(例えば混合ガウスモデル)
+		\item Mステップでは、下界$\mathcal{L}(q, \bm{\theta})$が$\bm{\theta}$について最大化されて、パラメータ$\bm{\theta}^\mathrm{new}$が得られる
+	\end{itemize} \
+	
+	\item 続くEステップ
+	\begin{itemize}
+		\item 続くEステップでは、\color{green}緑の実線\normalcolor で示した下界$\mathcal{L}(q, \bm{\theta}^\mathrm{new})$が計算される
+		\item 下界$\mathcal{L}(q, \bm{\theta}^\mathrm{new})$は、$\ln p(\bm{X} | \bm{\theta})$と$\bm{\theta}^\mathrm{new}$で接する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item 勾配が等しくなることについての証明
+	\begin{itemize}
+		\item 以下の式の、$\bm{\theta}$による微分を考えれば明らか
+		\begin{eqnarray}
+			&& \left. \frac{\partial}{\partial \bm{\theta}} \ln p(\bm{X} | \bm{\theta}) \right|_{\bm{\theta}^\mathrm{old}} \nonumber \\
+			&=& \left. \frac{\partial}{\partial \bm{\theta}} \mathcal{L}(q, \bm{\theta}) \right|_{\bm{\theta}^\mathrm{old}} + \left. \frac{\partial}{\partial \bm{\theta}} \KL (q || p) \right|_{\bm{\theta}^\mathrm{old}} \nonumber \\
+			&=& \left. \frac{\partial}{\partial \bm{\theta}} \mathcal{L}(q, \bm{\theta}) \right|_{\bm{\theta}^\mathrm{old}}
+		\end{eqnarray}
+		
+		\item Eステップによって$\KL (q || p)$が最小化されるので、$\bm{\theta}$による勾配も当然$0$になるはずである
+		\item このとき、$\ln p(\bm{X} | \bm{\theta})$と$\mathcal{L}(q, \bm{\theta})$の、$\bm{\theta}^\mathrm{old}$における微分値が等しくなる
+		\item 従って、$\bm{\theta}^\mathrm{old}$において\alert{両者は接する}ことが分かる
+		\newline
+		\item 直感的には、次のように考えればよい
+		\item 両者が接していなければ、交差しているはずである
+		\item このとき、対数尤度$\ln p(\bm{X} | \bm{\theta})$が、下界$\mathcal{L}$を上回る($\mathcal{L}(q, \bm{\theta}) > \ln p(\bm{X} | \bm{\theta})$)ような$\bm{\theta}$が存在する
+		\newline
+		\item これは、$\KL (q || p) < 0$となる可能性があることを示し、従って有り得ないので、両者は接しているはず
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.75,trim=2cm 15cm 1cm 2cm,page=473]{../pattern-recognition-and-machine-learning.pdf}
+	\caption{EMアルゴリズムの手続き}
+	\label{fig:em-algorithm-visualization}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item \alert{i.i.d標本}である場合
+	\begin{itemize}
+		\item データ点$\bm{x}_i$と、対応する潜在変数$\bm{z}_i$が、同一の確率分布$p(\bm{x}, \bm{z})$から独立に得られている場合
+		\item 以下のように同時分布$p(\bm{X}, \bm{Z})$を分解できる
+		\begin{equation}
+			p(\bm{X}, \bm{Z}) = \prod_i p(\bm{x}_i, \bm{z}_i)
+		\end{equation}
+		
+		\item 従って、Eステップで計算される事後確率$p(\bm{Z} | \bm{X}, \bm{\theta})$は次のようになる
+		\begin{eqnarray}
+			p(\bm{Z} | \bm{X}, \bm{\theta}) &=& \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{p(\bm{X} | \bm{\theta})} \nonumber \\
+			&=& \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{\sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta})} \nonumber \\
+			&=& \frac{\prod_i p(\bm{x}_i, \bm{z}_i | \bm{\theta})}{\sum_{\bm{Z}} \prod_i p(\bm{x}_i, \bm{z}_i | \bm{\theta})} \nonumber \\
+			&=& \frac{\prod_i p(\bm{x}_i, \bm{z}_i | \bm{\theta})}{\prod_i \sum_{\bm{Z}} p(\bm{x}_i, \bm{z}_i | \bm{\theta})} \nonumber \\
+			&=& \frac{\prod_i p(\bm{x}_i, \bm{z}_i | \bm{\theta})}{\prod_i p(\bm{x}_i | \bm{\theta})} \nonumber \\
+			&=& \prod_i \frac{p(\bm{x}_i, \bm{z}_i | \bm{\theta})}{p(\bm{x}_i | \bm{\theta})} \nonumber \\
+			&=& \prod_i p(\bm{z}_i | \bm{x}_i, \bm{\theta})
+		\end{eqnarray}
+		各データ点に対する事後確率$p(\bm{z}_i | \bm{x}_i, \bm{\theta})$の積として、$p(\bm{Z} | \bm{X}, \bm{\theta})$を表現できた
+		
+		\item 例えば混合ガウスモデルであれば、データ点$\bm{x}_i$に対する各ガウス分布の負担率は、データ$\bm{x}_i$とガウス分布のパラメータ$\bm{\theta}$にのみ依存し、他のデータ点には依存しないということを示している
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{MAP推定に対するEMアルゴリズム}
+
+\begin{frame}{MAP推定に対するEMアルゴリズム}
+
+\begin{itemize}
+	\item 事後分布の対数$\ln p(\bm{\theta} | \bm{X})$の最大化
+	\begin{itemize}
+		\item 今までは、尤度関数$\ln p(\bm{X} | \bm{\theta})$の最適化を考えてきた
+		\item 即ち、\alert{最尤推定に対するEMアルゴリズム}を考えてきた
+		\newline
+		\item パラメータの事前分布$p(\theta)$を導入したモデルであれば、最尤推定だけでなく\alert{MAP推定}に対しても、EMアルゴリズムを使える
+		\newline
+		\item MAP推定とは、次式のように、事後分布$p(\bm{\theta} | \bm{X})$を最大化するパラメータ$\bm{\theta}^*$を求める問題である
+		\begin{eqnarray}
+			\bm{\theta}^* &=& \argmax_{\bm{\theta}} p(\bm{\theta} | \bm{X}) \\
+			&=& \argmax_{\bm{\theta}} \frac{p(\bm{X}, \bm{\theta})}{p(\bm{X})} \\
+			&=& \argmax_{\bm{\theta}} \frac{p(\bm{X} | \bm{\theta}) p(\bm{\theta})}{p(\bm{X})} \\
+			&=& \argmax_{\bm{\theta}} p(\bm{X} | \bm{\theta}) p(\bm{\theta})
+		\end{eqnarray}
+		
+		\item 事後分布の対数$\ln p(\bm{\theta} | \bm{X})$は
+		\begin{eqnarray}
+			\ln p(\bm{\theta} | \bm{X}) &=& \ln \frac{p(\bm{X}, \bm{\theta})}{p(\bm{X})} \\
+			&=& \ln \frac{p(\bm{X} | \bm{\theta}) p(\bm{\theta})}{p(\bm{X})} \nonumber \\
+			&=& \ln p(\bm{X} | \bm{\theta}) + \ln p(\bm{\theta}) - p(\bm{X}) \\
+			&=& \mathcal{L}(q, \bm{\theta}) + \KL (q || p) + \ln p(\bm{\theta}) - p(\bm{X}) \\
+			&\ge& \mathcal{L}(q, \bm{\theta}) + \ln p(\bm{\theta}) - p(\bm{X}) \\
+			&=& \mathcal{L}(q, \bm{\theta}) + \ln p(\bm{\theta}) + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item $\ln p(\bm{X})$は定数とみなせるから、$\ln p(\bm{\theta} | \bm{X})$の最大化は、結局\color{red}$\mathcal{L}(q, \bm{\theta}) + \ln p(\bm{\theta})$の最大化に相当\normalcolor する
+	\end{itemize} \
+	
+	\framebreak
+	
+	\item MAP推定に対するEMアルゴリズム
+	\begin{itemize}
+		\item \alert{Eステップ}では、パラメータ$\bm{\theta}$を固定しつつ、$q$について$\mathcal{L}(q, \bm{\theta})$を最大化する
+		\item $q$は下界$\mathcal{L}(q, \bm{\theta})$にしか現れないので、\alert{通常のEMアルゴリズムと全く同様}である
+		\newline
+		\item \alert{Mステップ}では、分布$q$を固定しつつ、パラメータ$\bm{\theta}$について$\mathcal{L}(q, \bm{\theta}) + \ln p(\bm{\theta})$を最大化する
+		\item 事前分布の項$\ln p(\bm{\theta})$が現れているが、大抵は、通常の最尤推定に関するEMアルゴリズムと、少ししか違わない
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{EMアルゴリズムの拡張}
+
+\begin{frame}{EMアルゴリズムの拡張}
+
+\begin{itemize}
+	\item EMアルゴリズムに対する懸念
+	\begin{itemize}
+		\item EMアルゴリズムは、潜在的に困難である尤度関数$\ln p(\bm{X} | \bm{\theta})$の最大化を、\alert{Eステップ}と\alert{Mステップ}の2つに分解してくれる
+		\item この2つのステップは多くの場合、実装が単純になる
+		\newline
+		\item 但し、複雑なモデルに対しては、2つのどちらかのステップが、\alert{依然として手に負えないかもしれない}
+	\end{itemize} \
+	
+	\item 一般化EMアルゴリズム
+	\begin{itemize}
+		\item 手に負えないMステップに対処するためのアルゴリズム
+		\item Mステップで、下界$\mathcal{L}(q, \bm{\theta})$を$\bm{\theta}$について\alert{最大化するのは諦める}代わりに、下界$\mathcal{L}(q, \bm{\theta})$を\alert{少しでも増加させるように}、$\bm{\theta}$を更新する
+		\newline
+		\item $\mathcal{L}(q, \bm{\theta})$は、\alert{常に}尤度関数$\ln p(\bm{X} | \bm{\theta})$の下界であるから、$\mathcal{L}$を押し上げることは、尤度関数の増加につながる
+		\newline
+		\item Mステップで\alert{制限付きの最適化}を行うことができる
+		\item パラメータ$\bm{\theta}$を\alert{幾つかのグループに分割}
+		\item 各グループに属するパラメータを、\alert{他のグループに属するパラメータを固定しながら}、\alert{順番に最適化}していく
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{EMアルゴリズムに関する補足}
+
+\begin{frame}
+
+\end{frame}
+
+\end{document}

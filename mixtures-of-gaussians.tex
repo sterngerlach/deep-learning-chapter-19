@@ -1,0 +1,828 @@
+
+% mixtures-of-gaussians.tex
+
+\documentclass[dvipdfmx,notheorems,t]{beamer}
+
+\usepackage{docmute}
+\input{settings}
+
+\begin{document}
+
+\section{混合ガウス分布}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 混合ガウス分布を導入する理由
+	\begin{itemize}
+		\item 曖昧さを含んだクラスタリング(\alert{ソフト割り当て})を実現するため
+		\item 言い換えると、データに対して、\alert{各クラスタに属する確率}が分かるようにするため
+	\end{itemize} \
+	
+	\item \alert{混合ガウス分布}とは
+	\begin{itemize}
+		\item 各ガウス分布の\alert{線形の重ね合わせ}
+		\begin{equation}
+			p(\bm{x}) = \sum_{k = 1}^K \pi_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)
+		\end{equation}
+		
+		\item 各ガウス分布$\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)$は\alert{混合要素}とよばれる
+		\item 各ガウス分布は個別に、\alert{平均}$\bm{\mu}_k$と\alert{共分散}$\bm{\Sigma}_k$のパラメータをもつ
+		\newline
+		
+		\item パラメータ$\pi_k$を\alert{混合係数}といい、以下の条件を満たす
+		\begin{equation}
+			\sum_k \pi_k = 1
+		\end{equation}
+		これは、$p(\bm{x})$を$\bm{x}$について積分すれば明らかである
+		\begin{eqnarray}
+			\int p(\bm{x}) d\bm{x} &=& 1\nonumber \\
+			\int \sum_k \pi_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) d\bm{x} &=& 1 \nonumber \\
+			\sum_k \pi_k \int \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) d\bm{x} &=& 1 \nonumber \\
+			\sum_k \pi_k &=& 1 \nonumber
+		\end{eqnarray}
+		各ガウス分布$\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)$は、正規化されている
+		\begin{equation}
+			\forall k \quad \int \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) d\bm{x} = 1 \nonumber
+		\end{equation}
+		
+		\item $\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) \ge 0$であるので、$p(\bm{x}) \ge 0$となるための十分条件は、全ての$k$について、$\pi_k \ge 0$が成立することである
+		\begin{equation}
+			\forall k \in \left\{ 1, \ldots, K \right\} \quad \pi_k \ge 0 \Rightarrow p(\bm{x}) \ge 0 \nonumber
+		\end{equation}
+		
+		\item これと$\sum_k \pi_k = 1$から、結局全ての$\pi_k$について以下が成り立つ
+		\begin{equation}
+			0 \le \pi_k \le 1
+		\end{equation}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{block}{混合ガウス分布}
+	\begin{eqnarray}
+		&& p(\bm{x}) = \sum_k \pi_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+		&& \sum_k \pi_k = 1, \quad \forall k \quad 0 \le \pi_k \le 1 \nonumber \\
+		&& \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k) = \frac{1}{(2 \pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ -\frac{1}{2} (\bm{x} - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x} - \bm{\mu}_k) \right\} \nonumber
+	\end{eqnarray}
+	
+	\begin{itemize}
+		\item 混合ガウス分布を決定づけるパラメータは、$\bm{\pi} \equiv \left\{ \pi_1, \pi_2, \ldots, \pi_K \right\}$、$\bm{\mu} \equiv \left\{ \bm{\mu}_1, \bm{\mu}_2, \ldots, \bm{\mu}_K \right\}$、$\bm{\Sigma} \equiv \left\{ \bm{\Sigma}_1, \bm{\Sigma}_2, \ldots, \bm{\Sigma}_K \right\}$
+	\end{itemize}
+\end{block}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 混合ガウス分布を導入する理由(再確認)
+	\begin{itemize}
+		\item データに対して、\alert{各クラスタに属する確率}が分かるようにするため
+	\end{itemize} \
+	
+	\item 問題設定
+	\begin{itemize}
+		\item $\bm{x}$の$N$個の観測点で構成されるデータ集合$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$ $(\bm{x}_i \in \mathbb{R}^D)$
+		\item データ集合$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$を、$K$個のクラスタに分割
+		\item $K$は、\alert{既知の定数}であるとする
+		\newline
+		\item $k$番目のクラスタが、\color{red} 平均$\bm{\mu}_k$、共分散行列$\bm{\Sigma}_k$の正規分布$\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)$で表現できる\normalcolor とする
+		\newline
+		\item 各クラスタの分布$\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)$を、$\pi_k$で重み付けして足し合わせた混合分布が、データ全体を表す分布である
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 最尤推定を試みる
+	\begin{itemize}
+		\item 最尤推定によって、混合ガウス分布のパラメータ$\bm{\pi}, \bm{\mu}, \bm{\Sigma}$が分かったとする
+		\item このとき次のようにすれば、クラスタリングが可能
+		\newline
+		\item 新たなデータ$\bm{x}$が得られたとき、全ての$k (k = 1, \ldots, K)$について$\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)$を計算する
+		\item これを最大にするような$k$が、データ$\bm{x}$が属するクラスタである
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 最尤推定を試みる
+	\begin{itemize}
+		\item 結論から先に言うと、いきなり最尤推定を試すと\alert{失敗する}
+		\newline
+		\item \alert{最尤推定}によって、混合ガウス分布$p(\bm{x})$のパラメータ$\bm{\theta} = \left\{ \bm{\pi}, \bm{\mu}, \bm{\Sigma} \right\}$を求めてみる
+		\item 尤度関数$p(\mathcal{D} | \bm{\theta})$を、パラメータ$\bm{\theta}$の関数とみなして、$\bm{\theta}$について最大化することにより、$\bm{\theta}$を求めるという考え方
+		\newline
+		\item 尤度関数$p(\mathcal{D} | \bm{\theta})$は、パラメータ$\bm{\theta}$が与えられたときの、データの条件付き確率である
+		\item パラメータを1つに決めたときに、データ$\mathcal{D}$が得られる確率
+		\newline
+		\item 対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$は次のようになる
+		\begin{eqnarray}
+			&& \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \ln \prod_i p(\bm{x}_i | \bm{\theta}) \nonumber \\
+			&=& \ln \prod_i \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \ln \left( \sum_k \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \right. \nonumber \\
+			&& \qquad \left. \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right)
+		\end{eqnarray}
+		\item 上式の最初の変形では、各データ$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$は、確率分布$p(\bm{x})$から、\alert{独立に得られている}という仮定を用いた
+		\item このようなデータ$\mathcal{D}$を、\alert{i.i.d標本}という (independently and identically distributed)
+		\newline
+		\item 対数$\ln$は単調増加関数であるため、対数を適用しても、関数の極値は変化しない
+		\item 尤度関数$p(\mathcal{D} | \bm{\theta})$の最大化は、対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$の最大化と等価
+	\end{itemize} \
+	
+	\item 重大な問題点
+	\begin{itemize}
+		\item \color{red} 対数関数$\ln$の内部に、総和($\displaystyle \sum$)が入ってしまっている \normalcolor
+		\item log-sumの形状になっているため、\alert{これ以上式を簡単にできない!}
+		\item クラスタ数$K = 1$であれば、対数$\ln$と、ガウス分布の指数$\exp$が打ち消し合って、式が簡潔になる
+		\newline
+		\item しかしここでは、このまま最尤推定を続けてみる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item パラメータ$\bm{\mu}_k$の最尤推定
+	\begin{itemize}
+		\item 対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$において、$\bm{\theta}$はパラメータ(定数)で、$\mathcal{D}$は変数であるが、実際は$\mathcal{D}$にはデータが入っているので、パラメータ$\bm{\theta}$を変数とみなす
+		\newline
+		\item $\ln p(\mathcal{D} | \bm{\theta})$をパラメータ$\bm{\mu}_k$で微分してみる
+		\item これを$0$と等置することで、最適な$\bm{\mu}_k$が満たすべき式が得られる
+		\newline
+		\item その前に、関数$f$の対数の微分について、以下が成立することを確認しておく
+		\begin{equation}
+			(\ln f)' = \frac{f'}{f}, \qquad f' = f \cdot (\ln f)'
+		\end{equation}
+		
+		\item このとき次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\mu}_k} \sum_i \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \frac{\partial}{\partial \bm{\mu}_k} \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \frac{\partial}{\partial \bm{\mu}_k} \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \frac{\partial}{\partial \bm{\mu}_k} \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \left( \frac{\partial}{\partial \bm{\mu}_k} \pi_k \right. \nonumber \\
+			&& \qquad \left. \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \nonumber \\
+			&& \qquad \frac{\partial}{\partial \bm{\mu}_k} \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\}
+		\end{eqnarray}
+		ここで、以下のようにできる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&=& \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&& \qquad \frac{\partial}{\partial \bm{\mu}_k} \left( -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right)
+		\end{eqnarray}
+		更に、次が成立する
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \left( -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right) \nonumber \\
+			&=& -\frac{1}{2} \frac{\partial}{\partial \bm{\mu}_k} \left( \bm{x}_i^T \bm{\Sigma}_k^{-1} \bm{x}_i - \bm{x}_i^T \bm{\Sigma}_k^{-1} \bm{\mu}_k - \color{red} \bm{\mu}_k^T \bm{\Sigma}_k^{-1} \bm{x}_i \normalcolor + \bm{\mu}_k^T \bm{\Sigma}_k^{-1} \bm{\mu}_k \right) \nonumber \\
+			&=& -\frac{1}{2} \frac{\partial}{\partial \bm{\mu}_k} \left( -\bm{x}_i^T \bm{\Sigma}_k^{-1} \bm{\mu}_k - \color{red} \bm{x}_i^T \bm{\Sigma}_k^{-1} \bm{\mu}_k \normalcolor + \bm{\mu}_k^T \bm{\Sigma}_k^{-1} \bm{\mu}_k \right) \nonumber \\
+			&=& -\frac{1}{2} \left( -2 \bm{x}_i^T \bm{\Sigma}_k^{-1} + 2 \bm{\Sigma}_k^{-1} \bm{\mu}_k \right) \nonumber \\
+			&=& \bm{\Sigma}_k^{-1} \bm{x}_i - \bm{\Sigma}_k^{-1} \bm{\mu}_k \nonumber \\
+			&=& \bm{\Sigma}_k^{-1} \left( \bm{x}_i - \bm{\mu}_k \right)
+		\end{eqnarray}
+		ここで、以下を用いた
+		\begin{eqnarray}
+			&& \bm{\mu}_k^T \bm{\Sigma}_k^{-1} \bm{x}_i \nonumber \\
+			&=& \left( \bm{\mu}_k^T \bm{\Sigma}_k^{-1} \bm{x}_i \right)^T \quad (\because \text{スカラーであるため転置してもよい}) \nonumber \\
+			&=& \bm{x}_i^T \left( \bm{\Sigma}_k^{-1} \right)^T \left( \bm{\mu}_k^T \right)^T \nonumber \\
+			&=& \bm{x}_i^T \bm{\Sigma}_k^{-1} \bm{\mu}_k
+		\end{eqnarray}
+		共分散行列$\bm{\Sigma}_k$は対称行列($\bm{\Sigma}_k^T = \bm{\Sigma}_k$)であるため、以下が成立
+		\begin{equation}
+			\left( \bm{\Sigma}_k^{-1} \right)^T = \left( \bm{\Sigma}_k^T \right)^{-1} = \bm{\Sigma}_k^{-1}
+		\end{equation}
+		各項の微分は次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \bm{x}_i^T \bm{\Sigma}_k^{-1} \bm{\mu}_k \nonumber \\
+			&=& \left( \bm{x}_i^T \bm{\Sigma}_k^{-1} \right)^T = \left( \bm{\Sigma}_k^{-1} \right)^T \left( \bm{x}_i^T \right)^T = \bm{\Sigma}_k^{-1} \bm{x}_i \\
+			&& \frac{\partial}{\partial \bm{\mu}_k} \bm{\mu}_k^T \bm{\Sigma}_k^{-1} \bm{\mu}_k \nonumber \\
+			&=& \left( \bm{\Sigma}_k^{-1} + \left( \bm{\Sigma}_k^{-1} \right)^T \right) \bm{\mu}_k = 2 \bm{\Sigma}_k^{-1} \bm{\mu}_k
+		\end{eqnarray}
+		結局、対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$の$\bm{\mu}_k$による微分は
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \nonumber \\
+			&& \qquad \frac{\partial}{\partial \bm{\mu}_k} \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \nonumber \\
+			&& \qquad \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \nonumber \\
+			&=& \sum_i \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \\
+			&=& 0 \nonumber
+		\end{eqnarray}
+		
+		\item 未知のパラメータ$\bm{\pi}, \bm{\mu}, \bm{\Sigma}$が、分母と分子の双方に出現する複雑な式
+		\item 直接この連立方程式を解いて、パラメータの最尤推定量を求めるのは難しそうである
+		\newline
+		\item 勾配$\nabla_{\bm{\mu}_k} \ln p(\mathcal{D} | \bm{\theta})$を利用した最適化も可能である
+		\item この勾配の方向に、パラメータ$\bm{\mu}_k$を少しだけ更新する
+		\item ここでは、\alert{EMアルゴリズム}という別の手法を導出しようとしている
+		\newline
+		\item $\bm{x}$のほかに、\alert{潜在変数}という仮想的な変数$\bm{z}$を導入することで、\alert{簡単に解けるようになる}
+		\newline
+		\item 上と似たような式が、後ほど登場する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item K-Meansでは、データを単一のクラスタに割り当てた (\alert{ハード割り当て})
+		\newline
+		\item データが属するクラスタだけではなく、より多くの情報(各クラスタに属する確率)を手に入れたい
+		\newline
+		\item \alert{ソフト割り当て}を実現するためには、クラスタリングを統計的機械学習(確率分布)の観点から見直して、再定式化を行う必要があった
+		\newline
+		\item 各クラスタをガウス分布として、データ全体を\alert{混合ガウス分布}に当てはめることを考えた
+		\newline
+		\item 混合ガウス分布のパラメータを、最尤推定により求めようとしたが、困難であることが分かった
+		\newline
+		\item そこで、\alert{潜在変数}を導入して、最尤推定を簡単に解こうと考えている
+	\end{enumerate}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 潜在変数$\bm{z}$の導入
+	\begin{itemize}
+		\item 各データ$\bm{x}_i$につき、1つのベクトル$\bm{z}_i \in \mathbb{R}^K$が対応しているとする
+		\item $\bm{z}_i$は、\color{red}データ$\bm{x}_i$が属するクラスタ \normalcolor を表現する
+	\end{itemize} \
+	
+	\item 潜在変数$\bm{z}$の表現
+	\begin{itemize}
+		\item $\bm{z}_i$は、$K$次元の二値確率変数$\bm{z}$の観測値である
+		\item $\bm{z}$の$k$番目の要素を、$z_k$と表すことにする
+		\newline
+		\item 確率変数$\bm{z}$は、\alert{1-of-K符号化法}により表現されるとする
+		\item 即ち、ある1つの$k \in \left\{ 1, \ldots, K \right\}$について$z_k = 1$で、$j \neq k$に対し$z_j = 0$となる
+		\item $z_k (k = 1, \ldots, K)$は、$z_k \in \left\{ 0, 1 \right\}$かつ$\sum_k z_k = 1$をみたす
+		\newline
+		\item ベクトル$\bm{z}$は$K$種類の状態を取る
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 潜在変数$\bm{z}$の例
+	\begin{itemize}
+		\item 例えば、データ点$\bm{x}_i$に対して$\bm{z}_i$があるとする
+		\item $z_{i1} = 1$ $(\bm{z}_i = \left[ 1, 0, 0, \ldots, 0 \right])$ならば、$\bm{x}_i$は$1$番目のクラスタ出身
+		\item $z_{i2} = 1$ $(\bm{z}_i = \left[ 0, 1, 0, \ldots, 0 \right])$ならば、$\bm{x}_i$は$2$番目のクラスタ出身
+	\end{itemize} \
+	
+	\item データ$\bm{x}_i$が作られるまでの流れ
+	\begin{itemize}
+		\item $\bm{z}$に関する確率分布$p(\bm{z})$から、$\bm{z}_i$がサンプルされる
+		\item $\bm{z}$が与えられた下での条件付き分布$p(\bm{x} | \bm{z})$から、$\bm{x}_i$がサンプルされる
+		\newline
+		\item 即ち、$\bm{x}, \bm{z}$の同時分布は、周辺分布$p(\bm{z})$と、条件付き分布$p(\bm{x} | \bm{z})$を用いて次のように書ける
+		\begin{equation}
+			p(\bm{x}, \bm{z}) = p(\bm{z}) p(\bm{x} | \bm{z})
+		\end{equation}
+		
+		\item 潜在変数$\bm{z}_i$が最初に決められ、その$\bm{z}_i$に応じて$\bm{x}_i$が決まると考える
+		\item $\bm{z}_i$は実際には存在しない、仮想的なものである
+		\newline
+		\item $\bm{z}_i$は、実際に観測される$\bm{x}_i$の\alert{裏側に潜んでいる}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item $p(\bm{x})$の表現(予想)
+	\begin{itemize}
+		\item $p(\bm{x})$は混合ガウス分布になってほしい
+		\begin{equation}
+			p(\bm{x}) = \sum_k \pi_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)
+		\end{equation}
+	\end{itemize} \
+	
+	\item 周辺分布$p(\bm{z})$の定義
+	\begin{itemize}
+		\item $p(\bm{z})$は次のように定める
+		\begin{equation}
+			p(\bm{z}) = \prod_k \pi_k^{z_k}, \quad p(z_k = 1) = \pi_k
+		\end{equation}
+		\item 但し$\pi_k$は混合係数であり、$\sum_k \pi_k = 1, 0 \le \pi_k \le 1$をみたす
+		\item $\bm{z}$の表現には1-of-K符号化法を使うため、左側のようにも書ける
+	\end{itemize} \
+	
+	\framebreak
+	
+	\item 条件付き分布$p(\bm{x} | \bm{z})$の定義
+	\begin{itemize}
+		\item $p(\bm{x} | \bm{z})$は次のように定める
+		\begin{eqnarray}
+			p(\bm{x} | \bm{z}) = \prod_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)^{z_k} \\
+			p(\bm{x} | z_k = 1) = \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)
+		\end{eqnarray}
+	\end{itemize} \
+	
+	\item $p(\bm{x})$の導出
+	\begin{itemize}
+		\item $\displaystyle \sum_{\bm{z}}$は、可能な全ての$\bm{z}$についての総和を取るということ
+		\item $\bm{z} = \left[ 1, 0, \ldots, 0 \right]^T, \left[ 0, 1, 0, \ldots, 0 \right]^T, \ldots, \left[ 0, \ldots, 0, 1 \right]^T$についての和
+		\item これは、ベクトル$\bm{z}$の中で、$1$である要素のインデックス$k$についての総和$\displaystyle \sum_k$を取ることに相当
+		\newline
+		\item $p(\bm{x}, \bm{z}) = p(\bm{z}) p(\bm{x} | \bm{z})$を、$\bm{z}$について周辺化すればよい
+		\begin{eqnarray}
+			p(\bm{x}) &=& \sum_{\bm{z}} p(\bm{x}, \bm{z}) \\
+			&=& \sum_{\bm{z}} p(\bm{z}) p(\bm{x} | \bm{z}) \\
+			&=& \sum_k p(z_k = 1) p(\bm{x} | z_k = 1) \\
+			&=& \sum_k \pi_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)
+		\end{eqnarray}
+		\item これは、混合ガウス分布と同じ形になっている
+	\end{itemize} \
+	
+	\item 何が嬉しいのか?
+	\begin{itemize}
+		\item 潜在変数を陽に含む表現$p(\bm{x}, \bm{z}) = p(\bm{z}) p(\bm{x} | \bm{z})$を得たことで、この同時分布を使った議論が可能になった
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item $p(z_k = 1 | \bm{x})$の表現
+	\begin{itemize}
+		\item $\bm{x}$が与えられた下での、$\bm{z}$の条件付き確率
+		\item 実は、$p(z_k = 1 | \bm{x})$は、\color{red}データ$\bm{x}$がクラスタ$k$に属する確率 \normalcolor を表す
+		\item \alert{求めようとしているのは、この値である!}
+		\newline
+		\item $\gamma(z_k) = p(z_k = 1 | \bm{x})$とすると、ベイズの定理から次のように書ける
+		\begin{eqnarray}
+			\gamma(z_k) &\equiv& p(z_k = 1 | \bm{x}) \\
+			&=& \frac{p(z_k = 1) p(\bm{x} | z_k = 1)}{\sum_j p(z_j = 1) p(\bm{x} | z_j = 1)} \nonumber \\
+			&=& \frac{\pi_k \mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_j \pi_j \mathcal{N}(\bm{x} | \bm{\mu}_j, \bm{\Sigma}_j)}
+		\end{eqnarray}
+		\item $\sum_k \gamma(z_k) = 1$であることに注意
+		\newline
+		\item 潜在変数を導入したので、最尤推定について再度考えてみる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 最尤推定を再挑戦
+	\begin{itemize}
+		\item パラメータ$\bm{\theta}$は、$\bm{\pi} \equiv \left\{ \pi_1, \pi_2, \ldots, \pi_K \right\}$、$\bm{\mu} \equiv \left\{ \bm{\mu}_1, \bm{\mu}_2, \ldots, \bm{\mu}_K \right\}$、$\bm{\Sigma} \equiv \left\{ \bm{\Sigma}_1, \bm{\Sigma}_2, \ldots, \bm{\Sigma}_K \right\}$をまとめたもの
+		\newline
+		\item 対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$は以下に示す通りであった
+		\begin{eqnarray}
+			&& \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \sum_i \ln \left( \sum_k \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \right. \nonumber \\
+			&& \qquad \left. \exp \left\{ -\frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right)
+		\end{eqnarray}
+		
+		\item 尤度関数を、$\bm{\pi}, \bm{\mu}, \bm{\Sigma}$のそれぞれについて最大化する
+		\item ここでは、尤度関数を最大化する$\bm{\mu}_k$が、満たすべき条件を考える
+		\item $\ln p(\mathcal{D} | \bm{\theta})$を$\bm{\mu}_k$について偏微分して$0$と等置すると、以下を得る
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}_k} \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \sum_i \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \\
+			&=& \sum_i \gamma(z_{ik}) \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) = 0
+		\end{eqnarray}
+		\item 途中までは、先程導出したものを利用
+		\item 負担率$\gamma(z_{ik})$が現れていることに注意
+		\newline
+		\item 共分散行列$\bm{\Sigma}_k$が正則であると仮定して、両辺に左から掛けて整理する
+		\begin{eqnarray}
+			&& \sum_i \gamma(z_{ik}) (\bm{x}_i - \bm{\mu}_k) = 0 \nonumber \\
+			&\Rightarrow& \sum_i \gamma(z_{ik}) \bm{\mu}_k = \sum_i \gamma(z_{ik}) \bm{x}_i \nonumber \\
+			&\Rightarrow& \bm{\mu}_k \sum_i \gamma(z_{ik}) = \sum_i \gamma(z_{ik}) \bm{x}_i \nonumber \\
+			&\Rightarrow& \bm{\mu}_k = \frac{1}{\sum_i \gamma(z_{ik})} \sum_i \gamma(z_{ik}) \bm{x}_i
+		\end{eqnarray}
+		\item これより、$\bm{\mu}_k$を導出する式が得られた
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}	
+	\item K-Means法との比較
+	\begin{itemize}
+		\item K-Means法における、平均ベクトル$\bm{\mu}_k$の更新式と見比べてみる
+		\begin{eqnarray}
+			&& \bm{\mu}_k = \frac{1}{\sum_i \gamma(z_{ik})} \sum_i \gamma(z_{ik}) \bm{x}_i \nonumber \\
+			&& \bm{\mu}_k = \frac{1}{\sum_i r_{ik}} \sum_i r_{ik} \bm{x}_i
+		\end{eqnarray}
+		\item $r_{ik}$を、$\gamma(z_{ik})$に置き換えたものとなっている
+		\newline
+		\item $\gamma(z_{ik})$は、データ$\bm{x}_i$が、クラスタ$k$に属する確率である
+		\newline
+		\item $\gamma(z_{ik})$を、全てのデータ$\bm{x}_i$について足し合わせたもの$\sum_i \gamma(z_{ik})$は、実質的に、\color{red}$k$番目のクラスタに割り当てられるデータの数\normalcolor を表している (整数になるとは限らない)
+		\item そこで、K-Means法のときと同じように、$N_k$を次のように定める
+		\begin{equation}
+			N_k = \sum_i \gamma(z_{ik})
+		\end{equation}
+		このとき、$\bm{\mu}_k$の式は
+		\begin{equation}
+			\bm{\mu}_k = \frac{1}{N_k} \sum_i \gamma(z_{ik}) \bm{x}_i
+		\end{equation}
+		
+		\item 例えば、$\gamma(z_{ik})$が$0, 1$のいずれかであれば、$\sum_i \gamma(z_{ik})$は、$k$番目のクラスタに属するデータの数と完全に一致
+		\newline
+		\item クラスタ$k$に対応するガウス分布の平均$\bm{\mu}_k$は、各データ$\bm{x}_i$の重み付き平均
+		\item 重み因子は、事後確率$p(z_k = 1 | \bm{x}_i) \equiv \gamma(z_{ik})$である
+		\newline
+		\item $\gamma(z_{ik})$は、$\sum_k \gamma(z_{ik}) = 1$となることからも分かるように、\color{red}$\bm{x}_i$を生成するために、$k$番目のガウス分布が、どの程度貢献したか\normalcolor を表す
+		\item 言い換えると、\color{red}$k$番目のガウス分布が、$\bm{x}_i$の出現を説明する度合い\normalcolor である
+		\newline
+		\item この意味で、$\gamma(z_{ik})$のことを\alert{負担率}(Responsibility)という
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 尤度関数を最大化する$\bm{\Sigma}_k$の導出
+	\begin{itemize}
+		\item $\bm{\mu}_k$の場合と同様に、対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$を、$\bm{\Sigma}_k$に関して微分して、$0$と等置すればよい
+		\item \alert{かなり導出が長くなるので注意}
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\Sigma}_k} \sum_i \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \frac{\partial}{\partial \bm{\Sigma}_k} \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \frac{\partial}{\partial \bm{\Sigma}_k} \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \frac{\partial}{\partial \bm{\Sigma}_k} \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)
+		\end{eqnarray}
+		ここで、以下の部分を求める
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\Sigma}_k} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&=& \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \left( \frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \right. \nonumber \\
+			&& \qquad \left. \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right)
+		\end{eqnarray}
+		微分の中身は、$\bm{\Sigma}_k$についての合成関数となっている
+		\begin{equation}
+			\frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber
+		\end{equation}
+		\newline
+		
+		\item 一般に、行列$\bm{X}$についてのスカラー関数$f(\bm{X}), g(\bm{X})$があるとき、以下の\alert{連鎖律}が成立
+		\begin{eqnarray}
+			\frac{\partial}{\partial \bm{X}} f(\bm{X}) g(\bm{X}) = f(\bm{X}) \frac{\partial g(\bm{X})}{\partial \bm{X}} + g(\bm{X}) \frac{\partial f(\bm{X})}{\partial \bm{X}}
+		\end{eqnarray}
+		これを利用して、先程の微分を求める
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&=& \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \frac{\partial}{\partial \bm{\Sigma}_k} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} + \nonumber \\
+			&& \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}}
+		\end{eqnarray}
+		\newline
+		
+		\item 各項の微分を順番に求める
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\Sigma}_k} \exp \left( \ln \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \right) \nonumber \\
+			&=& \frac{\partial}{\partial \bm{\Sigma}_k} \exp \left( - \frac{1}{2} \ln |\bm{\Sigma}_k| \right) \nonumber \\
+			&=& \exp \left( - \frac{1}{2} \ln |\bm{\Sigma}_k| \right) \frac{\partial}{\partial \bm{\Sigma}_k} \left( - \frac{1}{2} \ln |\bm{\Sigma}_k| \right) \nonumber \\
+			&=& \exp \left( - \frac{1}{2} \ln |\bm{\Sigma}_k| \right) \left( - \frac{1}{2} \right) \frac{\partial}{\partial \bm{\Sigma}_k} \ln |\bm{\Sigma}_k| \nonumber \\
+			&=& - \frac{1}{2} \exp \left( - \frac{1}{2} \ln |\bm{\Sigma}_k| \right) \left( \bm{\Sigma}_k^{-1} \right)^T \nonumber \\
+			&=& - \frac{1}{2} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \bm{\Sigma}_k^{-1}
+		\end{eqnarray}
+		また
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&=& \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \left( - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right)
+		\end{eqnarray}
+		であって
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \left( - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right) \nonumber \\
+			&=& - \frac{1}{2} \frac{\partial}{\partial \bm{\Sigma}_k} \left( (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right) \nonumber \\
+			&=& - \frac{1}{2} \frac{\partial}{\partial \bm{\Sigma}_k} \Tr \left( (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right) \nonumber \\
+			&=& - \frac{1}{2} \frac{\partial}{\partial \bm{\Sigma}_k} \Tr \left( \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \right) \nonumber \\
+			&=& - \frac{1}{2} \left( - \left( \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} \right)^T \right) \nonumber \\
+			&=& \frac{1}{2} \left( \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} \right)^T \nonumber \\
+			&=& \frac{1}{2} \left( \bm{\Sigma}_k^{-1} \right)^T \left( (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \right)^T \left( \bm{\Sigma}_k^{-1} \right)^T \nonumber \\
+			&=& \frac{1}{2} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1}
+		\end{eqnarray}
+		のように求まる
+		\newline
+		
+		\item 行列のトレースについて、一般に以下が成り立つことを利用している
+		\begin{eqnarray}
+			&& \Tr \left( \bm{X} \bm{Y} \right) = \Tr \left( \bm{Y} \bm{X} \right) \\
+			&& \Tr \left( \bm{X} \bm{Y} \bm{Z} \right) = \Tr \left( \bm{Y} \bm{Z} \bm{X} \right) = \Tr \left( \bm{Z} \bm{X} \bm{Y} \right)
+		\end{eqnarray}
+		
+		\item また先程の微分では以下の公式を用いている
+		\begin{equation}
+			\frac{\partial}{\partial \bm{X}} \Tr \left( \bm{X}^{-1} \bm{Y} \right) = - \left( \bm{X}^{-1} \bm{Y} \bm{X}^{-1} \right)^T
+		\end{equation}
+		
+		\item この公式を証明するためには、いくつかの段階を踏む必要がある
+		\newline
+		
+		\item まずは以下の微分公式の導出から始める
+		\begin{equation}
+			\frac{\partial}{\partial x} \bm{A} \bm{B} \nonumber
+		\end{equation}
+		上式の微分は、行列の積$\bm{A} \bm{B}$の$i, k$成分について考えれば
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial x} \sum_j A_{ij} B_{jk} \nonumber \\
+			&=& \sum_j \frac{\partial}{\partial x} A_{ij} B_{jk} \nonumber \\
+			&=& \sum_j \left( \frac{\partial A_{ij}}{\partial x} B_{jk} + A_{ij} \frac{\partial B_{jk}}{\partial x} \right) \nonumber \\
+			&=& \sum_j \frac{\partial A_{ij}}{\partial x} B_{jk} + \sum_j A_{ij} \frac{\partial B_{jk}}{\partial x}
+		\end{eqnarray}
+		であるから、結局
+		\begin{equation}
+			\frac{\partial}{\partial x} \bm{A} \bm{B} = \frac{\partial \bm{A}}{\partial x} \bm{B} + \bm{A} \frac{\partial \bm{B}}{\partial x}
+		\end{equation}
+		となる
+		
+		\item 上記の公式から、以下の公式を簡単に導ける
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial x} \bm{A}^{-1} \bm{A} = \frac{\partial \bm{A}^{-1}}{\partial x} \bm{A} + \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \nonumber \\
+			&& \frac{\partial}{\partial x} \bm{I} = \frac{\partial \bm{A}^{-1}}{\partial x} \bm{A} + \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \nonumber \\
+			&& 0 = \frac{\partial \bm{A}^{-1}}{\partial x} \bm{A} + \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x}
+		\end{eqnarray}
+		これに右から$\bm{A}^{-1}$を掛ければ
+		\begin{eqnarray}
+			&& 0 = \frac{\partial \bm{A}^{-1}}{\partial x} \bm{A} \bm{A}^{-1} + \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \bm{A}^{-1} \nonumber \\
+			&& 0 = \frac{\partial \bm{A}^{-1}}{\partial x} \bm{I} + \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \bm{A}^{-1} \nonumber \\
+			&& 0 = \frac{\partial \bm{A}^{-1}}{\partial x} + \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \bm{A}^{-1} \nonumber \\
+			&& \frac{\partial}{\partial x} \bm{A}^{-1} = - \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \bm{A}^{-1}
+		\end{eqnarray}
+		より
+		\begin{equation}
+			\frac{\partial}{\partial x} \bm{A}^{-1} = - \bm{A}^{-1} \frac{\partial \bm{A}}{\partial x} \bm{A}^{-1}
+		\end{equation}
+		を得る (逆行列の微分公式)
+		\newline
+		
+		\item 逆行列$\bm{A}^{-1}$の$k, l$成分$\left( \bm{A}^{-1} \right)_{kl}$については、以下のように書ける
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial x} \left( \bm{A}^{-1} \right)_{kl} \nonumber \\
+			&=& - \sum_{m, n} \left( \bm{A}^{-1} \right)_{km} \left( \frac{\partial \bm{A}}{\partial x} \right)_{mn} \left( \bm{A}^{-1} \right)_{ml} \nonumber \\
+			&=& - \sum_{m, n} \left( \bm{A}^{-1} \right)_{km} \frac{\partial A_{mn}}{\partial x} \left( \bm{A}^{-1} \right)_{ml}
+		\end{eqnarray}
+		
+		\item この逆行列の微分公式を使えば、以下の微分公式を導出できる
+		\begin{equation}
+			\frac{\partial}{\partial \bm{X}} \Tr \left( \bm{X}^{-1} \bm{Y} \right) \nonumber
+		\end{equation}
+		
+		行列$\bm{X}$の$i, j$要素による微分を考えれば
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial X_{ij}} \Tr \left( \bm{X}^{-1} \bm{Y} \right) \nonumber \\
+			&=& \frac{\partial}{\partial X_{ij}} \sum_{k, l} \left( \bm{X}^{-1} \right)_{kl} Y_{lk} \nonumber \\
+			&=& \sum_{k, l} \frac{\partial}{\partial X_{ij}} \left( \left( \bm{X}^{-1} \right)_{kl} \right) Y_{lk} \nonumber \\
+			&=& \sum_{k, l} \left( - \sum_{m, n} \left( \bm{X}^{-1} \right)_{km} \frac{\partial X_{mn}}{\partial X_{ij}} \left( \bm{X}^{-1} \right)_{ml} \right) Y_{lk} \nonumber \\
+			&=& \sum_{k, l} \left( - \left( \bm{X}^{-1} \right)_{ki} \left( \bm{X}^{-1} \right)_{jl} \right) Y_{lk} \nonumber \\
+			&=& \sum_{k, l} \left( - \left( \bm{X}^{-1} \right)_{jl} Y_{lk} \left( \bm{X}^{-1} \right)_{ki} \right) \nonumber \\
+			&=& - \left( \bm{X}^{-1} \bm{Y} \bm{X}^{-1} \right)_{ji} \nonumber \\
+			&=& - \left( \left( \bm{X}^{-1} \bm{Y} \bm{X}^{-1} \right)^T \right)_{ij}
+		\end{eqnarray}
+		であるから
+		\begin{equation}
+			\frac{\partial}{\partial \bm{X}} \Tr \left( \bm{X}^{-1} \bm{Y} \right) = - \left( \bm{X}^{-1} \bm{Y} \bm{X}^{-1} \right)^T
+		\end{equation}
+		を得られる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 尤度関数を最大化する$\bm{\Sigma}_k$の導出
+	\begin{itemize}		
+		\item これより、結局次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\Sigma}_k} \ln p(\mathcal{D} | \bm{\theta}) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \frac{\partial}{\partial \bm{\Sigma}_k} \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \nonumber \\
+			&& \qquad \left( \frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \nonumber \\
+			&& \qquad \left( \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \frac{\partial}{\partial \bm{\Sigma}_k} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} + \right. \nonumber \\
+			&& \qquad \left. \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \frac{\partial}{\partial \bm{\Sigma}_k} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \nonumber \\
+			&& \qquad \left( \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right. \nonumber \\
+			&& \qquad \left( \frac{1}{2} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} \right) - \nonumber \\
+			&& \qquad \left. \frac{1}{2} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \bm{\Sigma}_k^{-1} \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \right) \nonumber \\
+			&=& \sum_i \frac{1}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \pi_k \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\Sigma}_k|^\frac{1}{2}} \nonumber \\
+			&& \qquad \exp \left\{ - \frac{1}{2} (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) \right\} \nonumber \\
+			&& \qquad \left( \frac{1}{2} \bm{\Sigma}_k^{-1} (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} - \frac{1}{2} \bm{\Sigma}_k^{-1} \right) \nonumber \\
+			&=& \sum_i \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \nonumber \\
+			&& \qquad \frac{1}{2} \bm{\Sigma}_k^{-1} \left( (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} - \bm{I} \right) \nonumber \\
+			&=& \frac{1}{2} \sum_i \gamma(z_{ik}) \bm{\Sigma}_k^{-1} \left( (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \bm{\Sigma}_k^{-1} - \bm{I} \right) = 0
+		\end{eqnarray}
+		両辺に左右から$\bm{\Sigma}_k$を掛けて、整理すれば
+		\begin{eqnarray}
+			&& \frac{1}{2} \sum_i \gamma(z_{ik}) \left( (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T - \bm{\Sigma}_k \right) = 0 \nonumber \\
+			&\Rightarrow& \sum_i \gamma(z_{ik}) \bm{\Sigma}_k = \sum_i \gamma(z_{ik}) (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \nonumber \\
+			&\Rightarrow& \bm{\Sigma}_k = \frac{1}{\sum_i \gamma(z_{ik})} \sum_i \gamma(z_{ik}) (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \\
+			&\Rightarrow& \bm{\Sigma}_k = \frac{1}{N_k} \sum_i \gamma(z_{ik}) (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T
+		\end{eqnarray}
+		
+		\item これより、$\bm{\Sigma}_k$を導出する式が得られた
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item 尤度関数を最大化する$\pi_k$の導出
+	\begin{itemize}
+		\item $\bm{\mu}_k, \bm{\Sigma}_k$の場合と同様に、対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$を、$\pi_k$に関して微分して、$0$と等置すればよい
+		\item 但し、\color{red}$\sum_k \pi_k = 1$\normalcolor という制約条件を考慮しなければならない
+		\item そのため、\alert{ラグランジュの未定係数法}を用いる
+		\newline
+		\item 以下を最大化する$\pi_k$を求める
+		\begin{equation}
+			\ln p(\mathcal{D} | \bm{\theta}) + \lambda \left( \sum_k \pi_k - 1 \right)
+		\end{equation}
+		\item $\pi_k$で微分して$0$と等置すると、次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \pi_k} \left( \ln p(\mathcal{D} | \bm{\theta}) + \lambda \left( \sum_k \pi_k - 1 \right) \right) \nonumber \\
+			&=& \frac{\partial}{\partial \pi_k} \left( \sum_i \ln \left( \sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right) + \lambda \left( \sum_k \pi_k - 1 \right) \right) \nonumber \\
+			&=& \sum_i \frac{\mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} + \lambda \\
+			&=& \sum_i \frac{\gamma(z_{ik})}{\pi_k} + \lambda = 0
+		\end{eqnarray}
+		両辺に$\pi_k$を掛けて
+		\begin{equation}
+			\sum_i \gamma(z_{ik}) + \lambda \pi_k = 0
+		\end{equation}
+		$k$についての和を取ると
+		\begin{eqnarray}
+			&& \sum_k \left( \sum_i \gamma(z_{ik}) + \lambda \pi_k \right) = 0 \\
+			&& \sum_i \sum_k \gamma(z_{ik}) + \lambda \sum_k \pi_k = 0 \\
+			&& \sum_i 1 + \lambda = 0 \\
+			&& N + \lambda = 0 \\
+			&& \therefore \lambda = -N
+		\end{eqnarray}
+		これより
+		\begin{eqnarray}
+			&& \sum_i \gamma(z_{ik}) + (-N) \pi_k = 0 \\
+			&& \pi_k = \frac{1}{N} \sum_i \gamma(z_{ik}) = \frac{N_k}{N}
+		\end{eqnarray}
+		ここで、以下が成立することに注意
+		\begin{equation}
+			N_k = \sum_i \gamma(z_{ik}), \quad 1 = \sum_k \gamma(z_{ik}) \nonumber
+		\end{equation}
+		
+		\item これより、混合係数$\pi_k$は、全ての要素における、クラスタ$k$の負担率$\gamma(z_{ik})$の平均である
+		\newline
+		\item \color{red}ここまでで、対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$を最大化するような、$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の式が得られた\normalcolor
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{block}{$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の更新式}
+	\begin{eqnarray}
+		&& \bm{\mu}_k = \frac{1}{N_k} \sum_i \gamma(z_{ik}) \bm{x}_i \\
+		&& \bm{\Sigma}_k = \frac{1}{N_k} \sum_i \gamma(z_{ik}) (\bm{x}_i - \bm{\mu}_k) (\bm{x}_i - \bm{\mu}_k)^T \\
+		&& \pi_k = \frac{N_k}{N} \\
+		&& N_k = \sum_i \gamma(z_{ik})
+	\end{eqnarray}
+\end{block}
+
+\begin{block}{$\gamma(z_{ik})$の更新式}
+	\begin{equation}
+		\gamma(z_{ik}) = \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}
+	\end{equation}
+\end{block}
+
+\begin{itemize}
+	\item 注意点
+	\begin{itemize}
+		\item $\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の更新式は、これらのパラメータについての、\alert{陽な解は与えていない}
+		\item なぜなら、これらの更新式は全て、負担率$\gamma(z_{ik})$に依存しているため
+		\item そしてその負担率$\gamma(z_{ik})$は、$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の全てに依存する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item これらの更新式の意味
+	\begin{itemize}
+		\item 最尤推定の解を求めるための、\alert{繰り返し手続きの存在}を示唆
+		\item 即ち、$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の初期化後に、(1) $\gamma(z_{ik})$の更新と、(2)それを用いた$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の更新という、\alert{2段階の処理を繰り返す}手続き
+		\newline
+		\item これは、混合ガウス分布を確率モデルとして使ったときの、\alert{EMアルゴリズム}となっている
+		\newline
+		\item 混合ガウス分布に対するEMアルゴリズムは重要なので、次にまとめる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{block}{混合ガウス分布に対するEMアルゴリズム}
+	\begin{itemize}
+		\item 目的は、混合ガウスモデルが与えられているとき、そのパラメータ(各ガウス分布の平均、分散、そして混合係数)について、尤度関数を最大化することである
+	\end{itemize}
+\end{block}
+
+\begin{enumerate}
+	\item 平均$\bm{\mu}_k^\mathrm{old}$、分散$\bm{\Sigma}_k^\mathrm{old}$、そして混合係数$\pi_k^\mathrm{old}$を初期化し、対数尤度$\ln p(\mathcal{D} | \bm{\theta})$の初期値を計算
+	
+	\item \alert{Eステップ}: 現在のパラメータを用いて、負担率$\gamma(z_{ik})$を計算 \label{enum:e-step}
+	\begin{equation}
+		\gamma(z_{ik}) \leftarrow \frac{\pi_k^\mathrm{old} \mathcal{N}(\bm{x}_i | \bm{\mu}_k^\mathrm{old}, \bm{\Sigma}_k^\mathrm{old})}{\sum_k \pi_k^\mathrm{old} \mathcal{N}(\bm{x}_i | \bm{\mu}_k^\mathrm{old}, \bm{\Sigma}_k^\mathrm{old})}
+	\end{equation}
+		
+	\item \alert{Mステップ}: 現在の負担率$\gamma(z_{ik})$を用いて、パラメータを更新 \label{enum:m-step}
+	\begin{eqnarray}
+		\bm{\mu}_k^\mathrm{new} &\leftarrow& \frac{1}{N_k} \sum_i \gamma(z_{ik}) \bm{x}_i \\
+		\bm{\Sigma}_k^\mathrm{new} &\leftarrow& \frac{1}{N_k} \sum_i \gamma(z_{ik}) (\bm{x}_i - \color{red}\bm{\mu}_k^\mathrm{new}\normalcolor ) (\bm{x}_i - \color{red}\bm{\mu}_k^\mathrm{new}\normalcolor )^T \\
+		\pi_k^\mathrm{new} &\leftarrow& \frac{N_k}{N}
+	\end{eqnarray}
+	但し
+	\begin{equation}
+		N_k = \sum_i \gamma(z_{ik})
+	\end{equation}
+	
+	\item 対数尤度$\ln p(\mathcal{D} | \bm{\theta})$を計算
+	\begin{equation}
+		\ln p(\mathcal{D} | \bm{\theta}) = \sum_i \ln \left( \sum_k \pi_k^\mathrm{new} \mathcal{N}(\bm{x}_i | \bm{\mu}_k^\mathrm{new}, \bm{\Sigma}_k^\mathrm{new}) \right)
+	\end{equation}
+	パラメータの変化量、あるいは対数尤度の変化量をみて、収束性を判定
+	
+	\item 収束基準を満たしていなければ、(\ref{enum:e-step})に戻る
+	\begin{equation}
+		\bm{\mu}_k^\mathrm{old} \leftarrow \bm{\mu}_k^\mathrm{new}, \quad \bm{\Sigma}_k^\mathrm{old} \leftarrow \bm{\Sigma}_k^\mathrm{new}, \quad \pi_k^\mathrm{old} \leftarrow \pi_k^\mathrm{new}
+	\end{equation}
+\end{enumerate}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布}
+
+\begin{itemize}
+	\item EMアルゴリズムの概要
+	\begin{itemize}
+		\item \alert{Eステップ}(Expectation step)では、事後確率$p(z_k = 1 | \bm{x}_i)$、即ち負担率$\gamma(z_{ik})$を計算
+		\item \alert{Mステップ}(Maximization step)では、事後確率を使って、各パラメータ$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$を再計算
+	\end{itemize} \
+	
+	\item EMアルゴリズムでの注意点
+	\begin{itemize}
+		\item 上記(\ref{enum:m-step})のMステップにおける、各パラメータの計算順序に注意
+		\item 最初に新しい平均値$\bm{\mu}_k^\mathrm{new}$を計算し、\alert{その新しい平均値を使って}、新しい共分散行列$\bm{\Sigma}_k^\mathrm{new}$を計算する
+		\newline
+		\item EステップとMステップは、\color{red}対数尤度関数$\ln p(\mathcal{D} | \bm{\theta})$を増加させることが保証されている\normalcolor
+		\newline
+		\item EMアルゴリズムは、K-Means法と比べて、収束までに必要な繰り返し回数と、各ステップでの計算量が非常に多くなる
+		\item 混合ガウス分布の良い初期値を見つけるために、最初にK-Means法を実行し、その後にEMアルゴリズムを利用する、という方法がある
+		\newline
+		\item K-Means法により得られた平均ベクトル$\bm{\mu}_k$を、各ガウス分布の平均$\bm{\mu}_k$の初期値とする
+		\item 各クラスタに属するデータ点の\alert{標本分散}を、共分散行列$\bm{\Sigma}_k$の初期値とする
+		\item 各クラスタに属するデータ点の\alert{割合}を、混合係数$\pi_k$の初期値とする
+		\newline
+		\item 一般に対数尤度には、多数の局所解が存在するため、\alert{その中で最大のもの(大域的最適解)に収束するとは限らない}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\end{document}

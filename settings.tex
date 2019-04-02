@@ -1,0 +1,53 @@
+
+% settings.tex
+
+\AtBeginDvi{\special{pdf:tounicode 90ms-RKSJ-UCS2}}
+
+\AtBeginSection[]{\frame{\frametitle{目次}
+	\tableofcontents[currentsection, hideallsubsections]}}
+
+\usefonttheme{professionalfonts}
+\usetheme{Madrid}
+
+\setbeamercovered{transparent=30} 
+% \setbeamertemplate{navigation symbols}{}
+\setbeamertemplate{frametitle}[default][left]
+\setbeamertemplate{frametitle continuation}{}
+\setbeamertemplate{enumerate items}[square]
+\setbeamertemplate{caption}[numbered]
+
+\let\oldframe\frame
+\renewcommand\frame[1][allowdisplaybreaks,allowframebreaks,t]{\oldframe[#1]}
+
+\usepackage{bxdpx-beamer}
+\usepackage{pxjahyper}
+\usepackage{minijs}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{bm}
+
+\DeclareMathOperator*{\argmax}{arg\,max}
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator{\Tr}{Tr}
+\DeclareMathOperator{\KL}{KL}
+
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+
+\setbeamertemplate{theorems}[numbered]
+\theoremstyle{definition}
+\newtheorem{theorem}{定理}
+\newtheorem{definition}{定義}
+\newtheorem{proposition}{命題}
+\newtheorem{lemma}{補題}
+\newtheorem{corollary}{系}
+\newtheorem{conjecture}{予想}
+\newtheorem*{remark}{Remark}
+\renewcommand{\proofname}{}
+
+\renewcommand{\figurename}{図}
+\renewcommand{\tablename}{表}
+
+\renewcommand{\kanjifamilydefault}{\gtdefault}
