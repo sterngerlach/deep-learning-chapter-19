@@ -476,13 +476,9 @@
 		\item 混合ガウス分布の場合について実際に試すと、期待値の最大化によって、パラメータの更新式が再び導出できた
 	\end{enumerate} \
 	
-	\framebreak
-	
 	\item これからの話の流れ
 	\begin{itemize}
 		\item K-Means法と、混合ガウス分布に対するEMアルゴリズムを比較する
-		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、\color{red}$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化してもよい根拠\normalcolor を明らかにする
-		\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、$p(\bm{Z} | \bm{X}, \bm{\theta})$についての\alert{期待値を最大化する理由}を明らかにする
 	\end{itemize}
 \end{itemize}
 
@@ -676,6 +672,25 @@
 		
 		\item これは、$\pi_k$の値を、$k$番目のクラスタに割り当てられる、データ数の割合に設定することを意味している
 		\item $\pi_k$の値はK-Means法においては、もはや何の意味も持たない
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Means法との関連}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item K-Means法は、混合ガウス分布に対するEMアルゴリズムの、\alert{ある極限として得られる}ことが分かった
+	\end{enumerate} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、\color{red}$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化してもよい根拠\normalcolor を明らかにする
+		\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、$p(\bm{Z} | \bm{X}, \bm{\theta})$による\alert{期待値を取る理由}を明らかにする
+		\item EステップとMステップが、確かに\color{red}対数尤度関数$\ln p(\bm{X} | \bm{\theta})$を増加させる\normalcolor ことを証明する
+		\item これらの解明のために、一般的なEMアルゴリズムの取り扱いについて調べる
 	\end{itemize}
 \end{itemize}
 
@@ -1022,12 +1037,14 @@
 	\item 疑問に対する答え
 	\begin{itemize}
 		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化してよい根拠
-		\item そして、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の期待値を最大化してもよい理由
+		\item そして、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、$p(\bm{Z} | \bm{X}, \bm{\theta})$による期待値を取る理由
 		\newline
 		\item 期待値を取る操作は、式の導出の中で、極めて自然に現れた
 		\item 期待値$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$の最大化は、$\mathcal{L}(q, \bm{\theta})$の最大化と等価である
 		\item $\mathcal{L}(q, \bm{\theta})$は、$q$や$\bm{\theta}$によらず、常に$\ln p(\bm{X} | \bm{\theta})$の下界である
 		\item 下界を最大化することは、$\ln p(\bm{X} | \bm{\theta})$を徐々に大きくしていくことにつながる (図\ref{fig:em-algorithm-e-step}と図\ref{fig:em-algorithm-m-step}を参照)
+		\newline
+		\item これらより、$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の期待値を最適化させることは、$\ln p(\bm{X} | \bm{\theta})$を最適化させることと等価
 	\end{itemize}
 \end{itemize}
 
@@ -1201,6 +1218,29 @@
 
 \end{frame}
 
+\begin{frame}{一般のEMアルゴリズム}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{itemize}
+		\item 一般的なEMアルゴリズムの取り扱いを調べた
+		\item EMアルゴリズムに対する次の疑問を解決した
+		\newline
+		\item $\ln p(\bm{X} | \bm{\theta})$の代わりに、\color{red}$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$を最大化してもよい根拠\normalcolor
+		\item $\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、$p(\bm{Z} | \bm{X}, \bm{\theta})$による\alert{期待値を取る理由}
+		\item EステップとMステップが、\color{red}対数尤度関数$\ln p(\bm{X} | \bm{\theta})$を増加させる\normalcolor 理由
+	\end{itemize} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item \alert{MAP推定}に対するEMアルゴリズムの適用を考える
+		\item EMアルゴリズムの拡張(\alert{一般化EMアルゴリズム})について簡単に触れる
+		\item 混合ガウスモデルについて、\alert{逐次型}のEMアルゴリズムを導出する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
 \subsection{MAP推定に対するEMアルゴリズム}
 
 \begin{frame}{MAP推定に対するEMアルゴリズム}
@@ -1278,7 +1318,192 @@
 
 \subsection{EMアルゴリズムに関する補足}
 
-\begin{frame}
+\begin{frame}{パラメータについての補足}
+
+\begin{itemize}
+	\item パラメータ$\bm{\theta}$についての補足
+	\begin{itemize}
+		\item 任意の$\bm{\theta}$について、下界$\mathcal{L}(q, \bm{\theta})$は$q$について\alert{唯一の最大点}をもつ
+		\item それは事後分布$q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta})$である
+		\item またこのとき、下界$\mathcal{L}$は対数尤度関数$\ln p(\bm{X} | \bm{\theta})$に一致する
+		\newline
+		\item $\bm{\theta}$が下界$\mathcal{L}(q, \bm{\theta})$の大域的最適解に収束するなら、そのような$\bm{\theta}$は、対数尤度関数$\ln p(\bm{X} | \bm{\theta})$の大域的最適解でもある
+		\item 任意の下界$\mathcal{L}(q, \bm{\theta})$の任意の極大点は、$\ln p(\bm{X} | \bm{\theta})$の極大点でもある
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{逐次型のEMアルゴリズム}
+
+\begin{frame}{逐次型のEMアルゴリズムの例}
+
+\begin{itemize}
+	\item 混合ガウスモデルに対する逐次型のEMアルゴリズム
+	\begin{itemize}
+		\item Eステップでは、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta})$を計算する
+		\item データが\alert{i.i.d集合}であれば、次のように、各データ点ごとの事後確率$p(\bm{z}_i | \bm{x}_i, \bm{\theta})$の積として分解できる
+		\begin{equation}
+			p(\bm{Z} | \bm{X}, \bm{\theta}) = \prod_i p(\bm{z}_i | \bm{x}_i, \bm{\theta})
+		\end{equation}
+		
+		\item このとき、\alert{全てのデータ点}$\bm{X}$に対して事後確率を求める必要がある
+		\item これを、\alert{1つのデータ点}についてだけ事後確率を求めるように変更する
+		\newline
+		\item Mステップでも、1つのデータ点に対して求めた事後確率だけを使って、パラメータを逐次的に更新するように変更を加える
+		\item 混合ガウスモデルであれば、逐次的な更新式を導出することが可能
+		\newline
+		\item 従って、全てのデータ点に対する事後確率を使って、パラメータを再計算する必要がない
+		\newline
+		\item これらの変更によって、\alert{逐次版のEMアルゴリズム}を導出できる
+	\end{itemize} \
+	
+	\item 混合ガウスモデルに対する逐次型のEMアルゴリズムの導出
+	\begin{itemize}
+		\item データ点$\bm{x}_m$について、事後確率(負担率)$\gamma(z_{mk})$を更新したとする
+		\newline
+		\item 新しい負担率を$\gamma^\mathrm{new}(z_{mk})$、以前の負担率を$\gamma^\mathrm{old}(z_{mk})$とする
+		\newline
+		\item $d$を次のようにおく(前後の負担率の差)
+		\begin{equation}
+			d = \gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})
+		\end{equation}
+		
+		\item $N_k^\mathrm{new}$を次のようにおく(クラスタ$k$に属するデータの、実質的な個数)
+		\begin{equation}
+			N_k^\mathrm{new} = N_k^\mathrm{old} + \gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk}) = N_k^\mathrm{old} + d
+		\end{equation}
+		
+		\item 以前の平均$\bm{\mu}_k^\mathrm{old}$、共分散行列$\bm{\Sigma}_k^\mathrm{old}$、混合係数$\pi_k^\mathrm{old}$を、以下のように書くことにする
+		\begin{eqnarray}
+			\bm{\mu}_k^\mathrm{old} &=& \frac{1}{N_k^\mathrm{old}} \sum_i \gamma^\mathrm{old}(z_{ik}) \bm{x}_i \\
+			\bm{\Sigma}_k^\mathrm{old} &=& \frac{1}{N_k^\mathrm{old}} \sum_i \gamma^\mathrm{old}(z_{ik}) (\bm{x}_i - \bm{\mu}_k^\mathrm{old}) (\bm{x}_i - \bm{\mu}_k^\mathrm{old})^T \\
+			\pi_k^\mathrm{old} &=& \frac{N_k^\mathrm{old}}{N}
+		\end{eqnarray}
+		但し
+		\begin{equation}
+			N_k^\mathrm{old} = \sum_i \gamma^\mathrm{old}(z_{ik})
+		\end{equation}
+		
+		\item 平均の更新式は
+		\begin{eqnarray}
+			\bm{\mu}_k^\mathrm{new} &=& \frac{1}{N_k^\mathrm{new}} \left( \sum_{i \neq m} \gamma^\mathrm{old}(z_{ik}) \bm{x}_i + \gamma^\mathrm{new}(z_{mk}) \bm{x}_m \right) \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{old} \bm{\mu}_k^\mathrm{old} - \gamma^\mathrm{old}(z_{mk}) \bm{x}_m + \gamma^\mathrm{new}(z_{mk}) \bm{x}_m \right) \nonumber \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( \left( N_k^\mathrm{new} - \gamma^\mathrm{new}(z_{mk}) + \gamma^\mathrm{old}(z_{mk}) \right) \bm{\mu}_k^\mathrm{old} - \right. \nonumber \\
+			&& \qquad \left. \gamma^\mathrm{old}(z_{mk}) \bm{x}_m + \gamma^\mathrm{new}(z_{mk}) \bm{x}_m \right) \nonumber \\
+			&=& \bm{\mu}_k^\mathrm{old} + \frac{1}{N_k^\mathrm{new}} \left( -(\gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})) \bm{\mu}_k^\mathrm{old} + \right. \nonumber \\
+			&& \qquad \left. (\gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})) \bm{x}_m \right) \nonumber \\
+			&=& \bm{\mu}_k^\mathrm{old} + \frac{\gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})}{N_k^\mathrm{new}} \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \\
+			&=& \bm{\mu}_k^\mathrm{old} + \frac{d}{N_k^\mathrm{new}} \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)
+		\end{eqnarray}
+		
+		\item 分散の更新式は
+		\begin{eqnarray}
+			\bm{\Sigma}_k^\mathrm{new} &=& \frac{1}{N_k^\mathrm{new}} \sum_i \gamma^\mathrm{new}(z_{ik}) \bm{x}_i \bm{x}_i^T - \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( \sum_{i \neq m} \gamma^\mathrm{old}(z_{ik}) \bm{x}_i \bm{x}_i^T + \gamma^\mathrm{new}(z_{mk}) \bm{x}_m \bm{x}_m^T \right) - \nonumber \\
+			&& \qquad \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( \left( \sum_i \gamma^\mathrm{old}(z_{ik}) \bm{x}_i \bm{x}_i^T - \gamma^\mathrm{old}(z_{mk}) \bm{x}_m \bm{x}_m^T \right) + \right. \nonumber \\
+			&& \qquad \gamma^\mathrm{new}(z_{mk}) \bm{x}_m \bm{x}_m^T \Bigg) - \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{old} \left( \bm{\Sigma}_k^\mathrm{old} + \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T \right) - \right. \nonumber \\
+			&& \qquad \gamma^\mathrm{old}(z_{mk}) \bm{x}_m \bm{x}_m^T + \gamma^\mathrm{new}(z_{mk}) \bm{x}_m \bm{x}_m^T \Bigg) - \nonumber \\
+			&& \qquad \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{old} \bm{\Sigma}_k^\mathrm{old} + N_k^\mathrm{old} \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + \right. \nonumber \\
+			&& \qquad \left( \gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk}) \right) \bm{x}_m \bm{x}_m^T - \nonumber \\
+			&& \qquad N_k^\mathrm{new} \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \Bigg) \nonumber \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{old} \bm{\Sigma}_k^\mathrm{old} + N_k^\mathrm{old} \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + \right. \nonumber \\
+			&& \qquad d \bm{x}_m \bm{x}_m^T - N_k^\mathrm{new} \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \Bigg)
+		\end{eqnarray}
+		ここで
+		\begin{eqnarray}
+			&& N_k^\mathrm{new} \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \nonumber \\
+			&=& \left( N_k^\mathrm{new} \bm{\mu}_k^\mathrm{old} + d (\bm{x}_m - \bm{\mu}_k^\mathrm{old}) \right) (\bm{\mu}_k^\mathrm{new})^T \nonumber \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{new} \bm{\mu}_k^\mathrm{old} + d (\bm{x}_m - \bm{\mu}_k^\mathrm{old}) \right) \nonumber \\
+			&& \qquad \left( N_k^\mathrm{new} \bm{\mu}_k^\mathrm{old} + d \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \right)^T \nonumber \\
+			&=& N_k^\mathrm{new} \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + 2 \bm{\mu}_k^\mathrm{old} d \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T + \nonumber \\
+			&& \qquad \frac{1}{N_k^\mathrm{new}} d^2 \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \\
+			&=& (N_k^\mathrm{old} + d) \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + \nonumber \\
+			&& \qquad 2d \bm{\mu}_k^\mathrm{old} \bm{x}_m^T - 2d \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + \nonumber \\
+			&& \qquad \frac{1}{N_k^\mathrm{new}} d^2 \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T
+		\end{eqnarray}
+		であるから
+		\begin{eqnarray}
+			&& N_k^\mathrm{old} \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + d \bm{x}_m \bm{x}_m^T - N_k^\mathrm{new} \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \nonumber \\
+			&=& N_k^\mathrm{old} \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + d \bm{x}_m \bm{x}_m^T - \nonumber \\
+			&& \qquad (N_k^\mathrm{old} + d) \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T - \nonumber \\
+			&& \qquad 2d \bm{\mu}_k^\mathrm{old} \bm{x}_m^T + 2d \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T - \nonumber \\
+			&& \qquad \frac{1}{N_k^\mathrm{new}} d^2 \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \nonumber \\
+			&=& d \bm{x}_m \bm{x}_m^T + d \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T - 2d \bm{\mu}_k^\mathrm{old} \bm{x}_m^T - \nonumber \\
+			&& \qquad \frac{1}{N_k^\mathrm{new}} d^2 \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \nonumber \\
+			&=& d \left( \bm{x}_m \bm{x}_m^T + \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T - 2 \bm{\mu}_k^\mathrm{old} \bm{x}_m^T \right) - \nonumber \\
+			&& \qquad \frac{1}{N_k^\mathrm{new}} d^2 \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \nonumber \\
+			&=& d (\bm{x}_m - \bm{\mu}_k^\mathrm{old}) (\bm{x}_m - \bm{\mu}_k^\mathrm{old})^T - \nonumber \\
+			&& \qquad \frac{1}{N_k^\mathrm{new}} d^2 \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \nonumber \\
+			&=& \frac{d}{N_k^\mathrm{new}} \left( N_k^\mathrm{new} - d \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \nonumber \\
+			&=& \frac{d}{N_k^\mathrm{new}} N_k^\mathrm{old} \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T
+		\end{eqnarray}
+		以上より
+		\begin{eqnarray}
+			\bm{\Sigma}_k^\mathrm{new} &=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{old} \bm{\Sigma}_k^\mathrm{old} + N_k^\mathrm{old} \bm{\mu}_k^\mathrm{old} (\bm{\mu}_k^\mathrm{old})^T + \right. \nonumber \\
+			&& \qquad d \bm{x}_m \bm{x}_m^T - N_k^\mathrm{new} \bm{\mu}_k^\mathrm{new} (\bm{\mu}_k^\mathrm{new})^T \Bigg) \nonumber \\
+			&=& \frac{1}{N_k^\mathrm{new}} \left( N_k^\mathrm{old} \bm{\Sigma}_k^\mathrm{old} + \right. \nonumber \\
+			&& \qquad \left. \frac{d}{N_k^\mathrm{new}} N_k^\mathrm{old} \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \right) \nonumber \\
+			&=& \frac{N_k^\mathrm{old}}{N_k^\mathrm{new}} \left( \bm{\Sigma}_k^\mathrm{old} + \frac{d}{N_k^\mathrm{new}} \right. \nonumber \\
+			&& \qquad \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \bigg) \nonumber \\
+			&=& \frac{N_k^\mathrm{old}}{N_k^\mathrm{new}} \bigg( \bm{\Sigma}_k^\mathrm{old} + \frac{\gamma^\mathrm{new}(z_{ik}) - \gamma^\mathrm{old}(z_{ik})}{N_k^\mathrm{new}} \nonumber \\
+			&& \qquad \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \bigg)
+		\end{eqnarray}
+		
+		\item 混合係数の更新式は
+		\begin{equation}
+			\pi_k^\mathrm{new} = \frac{N_k^\mathrm{new}}{N} = \frac{N_k^\mathrm{old} + \gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})}{N}
+		\end{equation}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{逐次型のEMアルゴリズムの例}
+	
+\begin{itemize}
+	\item 混合ガウスモデルにおける逐次型のEMアルゴリズム
+	\begin{itemize}
+		\item 上記より、パラメータ$\bm{\mu}_k, \bm{\Sigma}_k, \pi_k$の逐次更新式が得られた
+		\begin{eqnarray}
+			\bm{\mu}_k^\mathrm{new} &=& \bm{\mu}_k^\mathrm{old} + \frac{\gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})}{N_k^\mathrm{new}} \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \\
+			\bm{\Sigma}_k^\mathrm{new} &=& \frac{N_k^\mathrm{old}}{N_k^\mathrm{new}} \bigg( \bm{\Sigma}_k^\mathrm{old} + \frac{\gamma^\mathrm{new}(z_{ik}) - \gamma^\mathrm{old}(z_{ik})}{N_k^\mathrm{new}} \nonumber \\
+			&& \qquad \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right) \left( \bm{x}_m - \bm{\mu}_k^\mathrm{old} \right)^T \bigg) \\
+			\pi_k^\mathrm{new} &=& \frac{N_k^\mathrm{new}}{N} = \frac{N_k^\mathrm{old} + \gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})}{N}
+		\end{eqnarray}
+		但し
+		\begin{equation}
+			N_k^\mathrm{new} = N_k^\mathrm{old} + \gamma^\mathrm{new}(z_{mk}) - \gamma^\mathrm{old}(z_{mk})
+		\end{equation}
+		\newline
+		\item 到着したデータ$\bm{x}_m$について、Eステップで負担率$\gamma(z_{mk})$を求めた後に、Mステップで(上記の更新式を用いて)パラメータを更新することを、交互に繰り返せばよい
+	\end{itemize} \
+	
+	\item 逐次型のEMアルゴリズムの特徴
+	\begin{itemize}
+		\item $\bm{x}_m$が新しく到着したデータであれば、$\gamma^\mathrm{old}(z_{mk}) = 0$とする
+		\newline
+		\item EステップとMステップの計算に必要な時間は、データ点の総数とは無関係に決まる
+		\item パラメータの更新は、全データについての処理を待たずに、各データ点についての処理の後に行われる
+		\item そのため、逐次型のEMアルゴリズムは、従来のバッチ型に比べて、\alert{速く収束する}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{逐次型のEMアルゴリズムの例}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{itemize}
+		\item \alert{MAP推定}に対するEMアルゴリズムについて考えた
+		\item EMアルゴリズムの拡張(\alert{一般化EMアルゴリズム})について簡単に触れた
+		\item 混合ガウスモデルについて、\alert{逐次型}のEMアルゴリズムを導出した
+	\end{itemize}
+\end{itemize}
 
 \end{frame}
 
