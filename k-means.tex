@@ -415,4 +415,40 @@
 
 \end{frame}
 
+\begin{frame}{K-Meansアルゴリズムのまとめ}
+
+\begin{itemize}
+	\item K-Meansアルゴリズムの目的
+	\begin{itemize}
+		\item 各データが属するクラスタを決定する (\alert{ハード割り当て})
+	\end{itemize} \
+	
+	\item K-Meansアルゴリズムで行っていること
+	\begin{itemize}
+		\item 各クラスタに対して、中心となるベクトル$\bm{\mu}_k$を考えた
+		\item $\bm{\mu}_k$は、対応するクラスタに属する、全てのデータベクトルの平均として得られた
+		\item 各データ点は、それと最も距離が近い$\bm{\mu}_k$に対応するクラスタ$k$に割り当てた
+		\item 各データ点が属するクラスタを、$r_{ik}$という変数(1-of-K符号化法)で表した
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{K-Meansアルゴリズムのまとめ}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{itemize}
+		\item クラスタリングの問題を、目的関数$J$の最小化として表現できた
+		\item 目的関数$J$を、$\bm{\mu}_k$と$r_{ik}$の両方について一度に最適化することはできなかった
+		\item そこで$J$を、$\bm{\mu}_k$と$r_{ik}$について\alert{交互に最適化}することを考えた
+		\newline
+		\item 交互に行う最適化は、後ほど説明するEMアルゴリズムの、EステップとMステップに対応していた
+		\newline
+		\item 逐次版のK-Means法を、Robbins-Monro法を使って導出した
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
 \end{document}
