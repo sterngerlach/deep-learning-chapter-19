@@ -428,7 +428,7 @@
 		
 		\item これより
 		\begin{eqnarray}
-			&& \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i, \bm{\theta})}(z_{ik}) \nonumber \\
+			&& \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i, \bm{\theta})}[z_{ik}] \nonumber \\
 			&=& \frac{\displaystyle \sum_{\bm{z}_i} z_{ik} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}}{\displaystyle \sum_{\bm{z}_i} \prod_k \left( \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k) \right)^{z_{ik}}} \nonumber \\
 			&=& \frac{\pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)}{\sum_k \pi_k \mathcal{N}(\bm{x}_i | \bm{\mu}_k, \bm{\Sigma}_k)} \equiv \gamma(z_{ik})
 		\end{eqnarray}
@@ -475,6 +475,8 @@
 		\newline
 		\item 混合ガウス分布の場合について実際に試すと、期待値の最大化によって、パラメータの更新式が再び導出できた
 	\end{enumerate} \
+	
+	\framebreak
 	
 	\item これからの話の流れ
 	\begin{itemize}
@@ -681,9 +683,9 @@
 
 \begin{itemize}
 	\item ここまでの話の流れ
-	\begin{enumerate}
+	\begin{itemize}
 		\item K-Means法は、混合ガウス分布に対するEMアルゴリズムの、\alert{ある極限として得られる}ことが分かった
-	\end{enumerate} \
+	\end{itemize} \
 	
 	\item これからの話の流れ
 	\begin{itemize}
@@ -1502,6 +1504,40 @@
 		\item \alert{MAP推定}に対するEMアルゴリズムについて考えた
 		\item EMアルゴリズムの拡張(\alert{一般化EMアルゴリズム})について簡単に触れた
 		\item 混合ガウスモデルについて、\alert{逐次型}のEMアルゴリズムを導出した
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{EMアルゴリズムのまとめ}
+
+\begin{itemize}
+	\item EMアルゴリズムの目的
+	\begin{itemize}
+		\item 潜在変数をもつ確率モデルについて、パラメータの最尤解を求める
+	\end{itemize} \
+	
+	\item EMアルゴリズムで行っていること
+	\begin{itemize}
+		\item 対数尤度$\ln p(\bm{X} | \bm{\theta})$の直接の最適化が困難であっても、EステップとMステップという2段階の簡単な手続きに分割し、交互に繰り返すことで最適化できるようにする
+		\item 完全データ対数尤度$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の事後確率$\ln p(\bm{Z} | \bm{X}, \bm{\theta})$による期待値$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$の最大化を行う
+		\item 期待値の最大化は、$\mathcal{L}(q, \bm{\theta})$の最大化と等価である
+		\item $\mathcal{L}(q, \bm{\theta})$は$\ln p(\bm{X} | \bm{\theta})$の下界であるから、$\mathcal{L}$の最大化は、対数尤度$\ln p(\bm{X} | \bm{\theta})$の最大化に相当
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{EMアルゴリズムのまとめ}
+
+\begin{itemize}	
+	\item ここまでの話の流れ
+	\begin{itemize}
+		\item 発見的に導出した、混合ガウスモデルに対するEMアルゴリズムも、\alert{期待値の最大化}という考え方で解釈可能であった
+		\item K-Means法は、混合ガウスモデルに対するEMアルゴリズムの\alert{一種の極限として得られた}
+		\item 一般的なEMアルゴリズムの取り扱いについて調べた
+		\item 最尤推定だけでなく、\alert{MAP推定}に対してもEMアルゴリズムを適用できた
+		\item 混合ガウスモデルに対する、逐次版のEMアルゴリズムを導出した
 	\end{itemize}
 \end{itemize}
 
