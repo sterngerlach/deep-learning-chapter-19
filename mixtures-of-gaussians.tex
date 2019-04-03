@@ -825,4 +825,39 @@
 
 \end{frame}
 
+\begin{frame}{混合ガウス分布のまとめ}
+
+\begin{itemize}
+	\item 混合ガウス分布を導入する理由
+	\begin{itemize}
+		\item 曖昧さを含んだ、各データ点のクラスタへの割り当て(\alert{ソフト割り当て})を実現するため
+		\item 各データ点について、各クラスタに属する確率が分かるようにするため
+	\end{itemize} \
+	
+	\item 混合ガウス分布による表現
+	\begin{itemize}
+		\item 各クラスタがガウス分布$\mathcal{N}(\bm{x} | \bm{\mu}_k, \bm{\Sigma}_k)$に従うと仮定
+		\item 各ガウス分布を、混合係数$\pi_k$で重み付けして足し合わせることで、混合ガウス分布を作り、データ全体を表現する
+		\item パラメータ$\bm{\theta}$は、各ガウス要素の平均$\bm{\mu}_k$と共分散行列$\bm{\Sigma}_k$、そして混合係数$\pi_k$である
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{混合ガウス分布のまとめ}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{itemize}
+		\item 最尤推定(対数尤度$\ln p(\mathcal{D} | \bm{\theta})$の最大化)によって、パラメータ$\bm{\theta}$を求める試みは失敗した
+		\item \alert{対数の中に総和が入っている}せいで、対数尤度の式が複雑になっていた
+		\newline
+		\item \color{red}潜在変数$\bm{z}$\normalcolor を導入し、$\bm{z}$に関する分布を考えたことで、混合ガウス分布に対するEMアルゴリズムを自然に導出した
+		\newline
+		\item 事後確率$p(z_k = 1 | \bm{x}_i)$即ち負担率$\gamma(z_{ik})$の計算と、パラメータ$\bm{\theta}$の更新という\alert{2段階の処理}を、\alert{交互に繰り返していく}アルゴリズムであった
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
 \end{document}
