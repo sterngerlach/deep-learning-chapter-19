@@ -702,7 +702,7 @@
 	
 	\item 変分推論の目的
 	\begin{itemize}
-		\item 同時分布$p(\bm{X}, \bm{Z})$が求まっているときに、事後分布$p(\bm{Z} | \bm{X})$と、\alert{エビデンス}$p(\bm{X})$の近似を求める
+		\item 同時分布$p(\bm{X}, \bm{Z})$が求まっているときに、\alert{事後分布}$p(\bm{Z} | \bm{X})$と、\alert{エビデンス}$p(\bm{X})$の近似を求める
 	\end{itemize} \
 	
 	\item 注意点
@@ -710,6 +710,591 @@
 		\item 観測変数と潜在変数をまとめて、$\bm{X}, \bm{Z}$とおく
 		\item $p(\bm{X})$は、確率モデルからデータ$\bm{X}$が生起する確率である
 		\item \alert{データからみたモデルの好み}と解釈できるから、$p(\bm{X})$を\alert{モデルエビデンス}という
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item 周辺分布の対数$\ln p(\bm{X})$の分解
+	\begin{itemize}
+		\item EMアルゴリズムのときと同様であり、次のように分解できる
+		\begin{equation}
+			\ln p(\bm{X}) = \mathcal{L}(q) + \KL (q || p)
+		\end{equation}
+		
+		\item 但し、$\mathcal{L}(q)$と$\KL (q || p)$は次のように定義した
+		\begin{eqnarray}
+			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} \\
+			\KL (q || p) &=& -\int q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X})}{q(\bm{Z})}
+		\end{eqnarray}
+	\end{itemize} \
+		
+	\item パラメータ$\bm{\theta}$の扱い
+	\begin{itemize}
+		\item EMアルゴリズムとは異なり、\color{red}パラメータ$\bm{\theta}$がどこにも現れていない\normalcolor
+		% \item ここでは、全てのパラメータに事前分布が与えられた、\alert{完全にベイズ的なモデル}を考えている
+		% \item パラメータも、確率変数として$\bm{Z}$の中に含まれている
+		\item \alert{パラメータも潜在変数として扱っている}ので、パラメータベクトルは明示的には書かない
+		\item ここでは、パラメータ$\bm{\theta}$については、あまり気にしない
+		\newline
+		\item ここでは連続潜在変数について考えるが、離散潜在変数であれば、積分を$\bm{Z}$に関する総和に置き換えればよい
+	\end{itemize} \
+	
+	\item 下界$\mathcal{L}(q)$を最適化する動機
+	\begin{itemize}
+		\item $\mathcal{L}(q)$はエビデンスの対数$\ln p(\bm{X})$の下界であるから、\alert{エビデンス下界}ともいう
+		\newline
+		
+		\item $\mathcal{L}(q)$を$q$について最大化し、従って$\KL (q || p)$を最小化できれば、分布$q(\bm{Z})$を真の事後分布$p(\bm{Z} | \bm{X})$に近づけられる
+		\item $q(\bm{Z}) = p(\bm{Z} | \bm{X})$が分かれば、データ$\bm{X}$から、\color{red}潜在変数やパラメータ$\bm{Z}$が得られる\normalcolor
+	\end{itemize} \
+	
+	\framebreak
+	
+	\item 下界$\mathcal{L}(q)$の最適化
+	\begin{itemize}
+		\item EMアルゴリズムのときと同じように、下界$\mathcal{L}(q)$を、分布$q(\bm{Z})$について最大化する
+		\item これは、KLダイバージェンス$\KL (q || p)$を最小化することと等価である
+		\newline
+		\item 従って、\color{red}もし$q(\bm{Z})$を任意の分布にしてよければ\normalcolor 、$q(\bm{Z}) = p(\bm{Z} | \bm{X})$とおいて、KLダイバージェンスを$0$にすればよい
+		\newline
+		\item しかしここでは、\color{red}真の事後分布$p(\bm{Z} | \bm{X})$を求めることは不可能\normalcolor と仮定する
+	\end{itemize} \
+	
+	\item 分布$q(\bm{Z})$の近似
+	\begin{itemize}
+		\item $q(\bm{Z})$の形をある程度\alert{制限する}
+		\item 制限したクラスの$q(\bm{Z})$の中で、KLダイバージェンス$\KL (q || p)$を最小化するものを探す
+	\end{itemize} \
+	
+	\item 変分推論の目的
+	\begin{itemize}
+		\item 分布のクラスを制限することで、$q(\bm{Z})$を計算可能にすること
+		\item 表現力が豊かなクラスを使うことで、真の事後分布$p(\bm{Z} | \bm{X})$を良く近似する
+		\newline
+		\item 計算可能な分布のクラスの中で、\alert{可能な限り豊かな表現力を持つ}ものを選びたい
+		\item 表現力が豊かな分布を使うことは、真の事後分布を、精度良く近似することにつながるのであって、従って\alert{過学習は発生しない}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item 分布$q(\bm{Z})$のクラスを制限する方法
+	\begin{itemize}
+		\item 例えば分布$q(\bm{Z})$を、\alert{パラメトリックな分布に限定}することができる
+		\item 即ち、パラメータベクトル$\bm{\omega}$によって$q(\bm{Z} | \bm{\omega})$と記述されるような、分布に制限する
+		\newline
+		\item 分布$q(\bm{Z})$を、ガウス分布などの、何らかの特別なパラメトリックな分布と仮定することに相当
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item クラスを制限する別の方法(\alert{平均場近似})
+	\begin{itemize}
+		\item 分布$q(\bm{Z})$のクラスを制限する別の方法として、\alert{平均場近似}がある
+		\newline
+		\item 潜在変数$\bm{Z}$を、$M$個の\color{red}互いに排反なグループ$\left\{ \bm{Z}_1, \ldots, \bm{Z}_M \right\}$に分割\normalcolor
+		\item 分布$q(\bm{Z})$が、\alert{これらのグループによって分解されると仮定}
+		\begin{equation}
+			q(\bm{Z}) = \prod_{i = 1}^M q_i(\bm{Z}_i)
+		\end{equation}
+		
+		\item 分布$q$について、\alert{これ以上の仮定はしない}
+		\item 従って、各因子$q_i(\bm{Z}_i)$の関数形については、\alert{何の制限も課さない}
+		\newline
+		\item 平均場近似とは、元々は物理学における用語である
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item 下界$\mathcal{L}(q)$の最大化
+	\begin{itemize}
+		\item $q(\bm{Z}) = \prod_i q_i(\bm{Z}_i)$と分解できるような分布$q(\bm{Z})$の中で、\color{red}下界$\mathcal{L}(q)$を最大にするもの\normalcolor を探す
+		\newline
+		\item $\mathcal{L}(q)$を$q(\bm{Z})$について最大化するために、$\mathcal{L}(q)$を各因子$q_i(\bm{Z}_i)$について\color{red}順番に最大化\normalcolor していく
+		\item $\mathcal{L}(q)$に$q(\bm{Z}) = \prod_i q_i(\bm{Z}_i)$を代入して、因子の一つ$q_j(\bm{Z}_j)$に関する\alert{依存項}を抜き出してみよう
+		\begin{eqnarray}
+			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} d\bm{Z} \\
+			&=& \int \left( \prod_i q_i(\bm{Z}_i) \right) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} d\bm{Z} \\
+			&=& \int \prod_i q_i(\bm{Z}_i) \left( \ln p(\bm{X}, \bm{Z}) - \sum_i \ln q_i(\bm{Z}_i) \right) d\bm{Z} \\
+			&=& \int \prod_i q_i(\bm{Z}_i) \left( \ln p(\bm{X}, \bm{Z}) \right) d\bm{Z} - \nonumber \\
+			&& \qquad \int \prod_i q_i(\bm{Z}_i) \left( \sum_i \ln q_i(\bm{Z}_i) \right) d\bm{Z}
+		\end{eqnarray}
+		ここで第1項は
+		\begin{eqnarray}
+			&& \int \prod_i q_i(\bm{Z}_i) \left( \ln p(\bm{X}, \bm{Z}) \right) d\bm{Z} \nonumber \\
+			&=& \int q_j(\bm{Z}_j) \left( \prod_{i \neq j} q_i(\bm{Z}_i) \right) \left( \ln p(\bm{X}, \bm{Z}) \right) d\bm{Z}
+		\end{eqnarray}
+		$d\bm{Z} = d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M$であるから
+		\begin{eqnarray}
+			&=& \int q_j(\bm{Z}_j) \left( \prod_{i \neq j} q_i(\bm{Z}_i) \right) \left( \ln p(\bm{X}, \bm{Z}) \right) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M \\
+			&=& \int q_j(\bm{Z}_j) \left( \ln p(\bm{X}, \bm{Z}) \right) \left( \prod_{i \neq j} q_i(\bm{Z}_i) \right) \left( \prod_{i \neq j} d\bm{Z}_i \right) d\bm{Z}_j \\
+			&=& \int q_j(\bm{Z}_j) \left( \int \left( \ln p(\bm{X}, \bm{Z}) \right) \prod_{i \neq j} q_i(\bm{Z}_i) d\bm{Z}_i \right) d\bm{Z}_j \\
+			&=& \int q_j(\bm{Z}_j) \ln \widetilde{p}(\bm{X}, \bm{Z}_j) d\bm{Z}_j
+		\end{eqnarray}
+		
+		\item 但し、新しい分布$\widetilde{p}(\bm{X}, \bm{Z}_j)$は以下の式で定義した(積分の結果であるため、定数項が出現する)
+		\begin{equation}
+			\ln \widetilde{p}(\bm{X}, \bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] + \mathrm{Const.}
+		\end{equation}
+		
+		\item 記法$\mathbb{E}_{i \neq j}$は、$i \neq j$をみたす全ての分布$q_i(\bm{Z}_i)$による、期待値を取ることを表す
+		\begin{equation}
+			\mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] = \int \left( \ln p(\bm{X}, \bm{Z}) \right) \prod_{i \neq j} q_i(\bm{Z}_i) d\bm{Z}_i
+		\end{equation}
+		
+		\item 第2項は
+		\begin{eqnarray}
+			&& \int \prod_i q_i(\bm{Z}_i) \left( \sum_i \ln q_i(\bm{Z}_i) \right) d\bm{Z} \nonumber \\
+			&=& \sum_i \int \prod_i q_i(\bm{Z}_i) \left( \ln q_i(\bm{Z}_i) \right) d\bm{Z} \\
+			&=& \sum_i \int \prod_k q_k(\bm{Z}_k) \left( \ln q_i(\bm{Z}_i) \right) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M \\
+			&=& \int \prod_k q_k(\bm{Z}_k) \left( \ln q_j(\bm{Z}_j) \right) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M + \nonumber \\
+			&& \qquad \sum_{i \neq j} \int \prod_k q_k(\bm{Z}_k) \left( \ln q_i(\bm{Z}_i) \right) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M
+		\end{eqnarray}
+		但し
+		\begin{eqnarray}
+			&& \int \prod_k q_k(\bm{Z}_k) \left( \ln q_j(\bm{Z}_j) \right) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M \\
+			&=& \int q_j(\bm{Z}_j) \ln q_j(\bm{Z}_j) \left( \prod_{k \neq j} q_k(\bm{Z}_k) \right) \left( \prod_{k \neq j} d\bm{Z}_k \right) d\bm{Z}_j \\
+			&=& \int q_j(\bm{Z}_j) \ln q_j(\bm{Z}_j) \left( \int \prod_{k \neq j} q_k(\bm{Z}_k) d\bm{Z}_k \right) d\bm{Z}_j \\
+			&=& \int q_j(\bm{Z}_j) \ln q_j(\bm{Z}_j) \prod_{k \neq j} \underbrace{\left( \int q_k(\bm{Z}_k) d\bm{Z}_k \right)}_{=1} d\bm{Z}_j \\
+			&=& \int q_j(\bm{Z}_j) \ln q_j(\bm{Z}_j) d\bm{Z}_j
+		\end{eqnarray}
+		であるほか
+		\begin{eqnarray}
+			&& \sum_{i \neq j} \int \prod_k q_k(\bm{Z}_k) \left( \ln q_i(\bm{Z}_i) \right) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M \nonumber \\
+			&=& \sum_{i \neq j} \int q_i(\bm{Z}_i) q_j(\bm{Z}_j) \left( \prod_{k \neq i, j} \ln q_k(\bm{Z}_k) \right) \nonumber \\
+			&& \qquad \left( \ln q_i(\bm{Z}_i) \right) \left( \prod_{k \neq i, j} d\bm{Z}_k \right) d\bm{Z}_i d\bm{Z}_j \\
+			&=& \sum_{i \neq j} \underbrace{\left( \int q_j(\bm{Z}_j) d\bm{Z}_j \right)}_{=1} \left( \int \prod_{k \neq i, j} \ln q_k(\bm{Z}_k) d\bm{Z}_k \right) \nonumber \\
+			&& \qquad \int \ln q_i(\bm{Z}_i) q_i(\bm{Z}_i) d\bm{Z}_i \\
+			&=& \sum_{i \neq j} \prod_{k \neq i, j} \underbrace{\left( \int \ln q_k(\bm{Z}_k) d\bm{Z}_k \right)}_{=\mathrm{Const.}} \underbrace{\int \ln q_i(\bm{Z}_i) q_i(\bm{Z}_i) d\bm{Z}_i}_{=\mathrm{Const.}} \\
+			&=& \sum_{i \neq j} \mathrm{Const.} = \mathrm{Const.}
+		\end{eqnarray}
+		となるから結局
+		\begin{eqnarray}
+			&& \int \prod_i q_i(\bm{Z}_i) \left( \sum_i \ln q_i(\bm{Z}_i) \right) d\bm{Z} \nonumber \\
+			&=& \int q_j(\bm{Z}_j) \ln q_j(\bm{Z}_j) d\bm{Z}_j + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item 従って、下界$\mathcal{L}(q)$から$q_j(\bm{Z}_j)$に依存する項を取り出すと
+		\begin{eqnarray}
+			&& \mathcal{L}(q) = \int q_j(\bm{Z}_j) \ln \widetilde{p}(\bm{X}, \bm{Z}_j) d\bm{Z}_j - \nonumber \\
+			&& \qquad \int q_j(\bm{Z}_j) \ln q_j(\bm{Z}_j) d\bm{Z}_j + \mathrm{Const.}
+		\end{eqnarray}
+		但し
+		\begin{equation}
+			\ln \widetilde{p}(\bm{X}, \bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] = \int \ln p(\bm{X}, \bm{Z}) \prod_{i \neq j} q_i(\bm{Z}_i) d\bm{Z}_i
+		\end{equation}
+		
+		\item $\mathcal{L}(q)$を、$i \neq j$である全ての$q_i(\bm{Z}_i)$について固定した上で、$q_j(\bm{Z}_j)$について最大化する
+		\item $q_j(\bm{Z}_j)$について可能な全ての分布の中で、$\mathcal{L}(q)$を最大にするようなものを選ぶ
+		
+		\item $\mathcal{L}(q)$は次のように変形できる
+		\begin{eqnarray}
+			\mathcal{L}(q) &=& \int q_j(\bm{Z}_j) \ln \frac{\widetilde{p}(\bm{X}, \bm{Z}_j)}{q_j(\bm{Z}_j)} d\bm{Z}_j + \mathrm{Const.} \\
+			&=& - \KL \left( q_j(\bm{Z}_j) || \widetilde{p}(\bm{X}, \bm{Z}_j) \right) + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item これより、$\mathcal{L}(q)$は$q_j(\bm{Z}_j)$と$\widetilde{p}(\bm{X}, \bm{Z}_j)$の間の、負のKLダイバージェンスとなっている
+		\item そして、$\mathcal{L}(q)$の$q_j(\bm{Z}_j)$に関する最大化は、\alert{KLダイバージェンスの最小化}と等価
+		\newline
+		\item KLダイバージェンスを最小にするためには、$q_j(\bm{Z}_j) = \widetilde{p}(\bm{X}, \bm{Z}_j)$とすればよい
+		\newline
+		\item 従って、$q_j(\bm{Z}_j)$の最適解は、次のように書ける
+		\begin{equation}
+			\color{red}\ln q_j^*(\bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] + \mathrm{Const.}\normalcolor
+		\end{equation}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item 下界$\mathcal{L}(q)$を最大化する$\ln q_j(\bm{Z}_j)$の解
+	\begin{itemize}
+		\item $q_j(\bm{Z}_j)$の最適解は次のように書けた
+		\begin{equation}
+			\ln q_j^*(\bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] + \mathrm{Const.}
+		\end{equation}
+		
+		\item 上式は次のことを意味している
+		\item 因子$q_j(\bm{Z}_j)$の最適解の対数$\ln q_j^*(\bm{Z}_j)$は、観測データ$\bm{X}$と潜在変数$\bm{Z}$の\alert{同時分布の対数}$\ln p(\bm{X}, \bm{Z})$\alert{を考え}、$i \neq j$である他の因子$q_i(\bm{Z}_i)$について\alert{期待値を取ったもの}である
+		\newline
+		
+		\item 定数項は、正規化することで得られるので、結局次のようになる
+		\begin{equation}
+			q_j^*(\bm{Z}_j) = \frac{\exp(\mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})])}{\displaystyle \int \exp(\mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})]) d\bm{Z}_j}
+		\end{equation}
+		
+		\item 正規化定数は必要に応じて計算すればよいので、取り敢えず無視できる
+		\newline
+		
+		\item 最適解の式は、$q(\bm{Z})$の分解の数だけ得られるので、$\left\{ q_i(\bm{Z}_i) \right\}$に関する$M$本の連立方程式となる
+		\item この方程式は、分布$q(\bm{Z})$が$M$個の因子に分解されるという仮定の下で、下界$\mathcal{L}(q)$の最大値が満たすべき条件である
+		\newline
+		
+		\item $\ln q_j^*(\bm{Z}_j)$の右辺は、$i \neq j$である$q_i(\bm{Z}_i)$の期待値に依存するため、$q_j^*(\bm{Z}_j)$を陽に求めることができない
+		\item そこで、下界$\mathcal{L}(q)$は次のように最適化される(\alert{重要})
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item 下界$\mathcal{L}(q)$の最適化
+	\begin{enumerate}
+		\item 全ての因子$q_j(\bm{Z}_j)$を適当に初期化する
+		\newline
+		\item 各因子を、以下の式を使って更新する \label{enum:variational-inference-step}
+		\begin{eqnarray}
+			&& \ln q_j(\bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] + \mathrm{Const.} \\
+			&& \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] = \int \ln p(\bm{X}, \bm{Z}) \prod_{i \neq j} q_i(\bm{Z}_i) d\bm{Z}_i
+		\end{eqnarray}
+		即ち、因子$q_j(\bm{Z}_j)$を、他の全ての因子の現在の値$q_i(\bm{Z}_i)$を使って改良する
+		\newline
+		\item (\ref{enum:variational-inference-step})を、下界$\mathcal{L}(q)$が収束するまで繰り返す
+	\end{enumerate}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item $\ln p(\bm{X}) = \mathcal{L}(q) + \KL (q(\bm{Z}) || p(\bm{Z} | \bm{X}))$であるから、\alert{エビデンス下界}$\mathcal{L}(q)$を\color{red}$q$について最大化\normalcolor すれば、$\KL (q || p) = 0$とでき、従って$q(\bm{Z}) = p(\bm{Z} | \bm{X})$を得る
+		\newline
+		\item $q(\bm{Z}) = p(\bm{Z} | \bm{X})$が分かれば、データ$\bm{X}$から、\color{red}潜在変数やパラメータ$\bm{Z}$が得られる\normalcolor (パラメータは潜在変数$\bm{Z}$に含まれている)
+		\newline
+		\item しかし、事後分布$q(\bm{Z}) = p(\bm{Z} | \bm{X})$は\alert{計算不可能}なので、何らかの方法で\alert{近似}するしかない
+		\newline
+		\item 近似するといっても、計算可能でなければならないので、$q(\bm{Z})$の形には、通常\alert{何らかの制限}を課す
+		\newline
+		\item $q(\bm{Z})$を、\alert{パラメトリックな分布}$q(\bm{Z} | \bm{\omega})$と仮定することがある
+		\newline
+		\item または、$q(\bm{Z})$を、$\prod_i q_i(\bm{Z}_i)$のように分解できるとする(\alert{平均場近似})
+		\newline
+		\item \alert{平均場近似}を行うとき、各因子$q_j(\bm{Z}_j)$の最適解は、$\ln q_j^*(\bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] + \mathrm{Const.}$であった
+		\newline
+		\item 全ての因子$\left\{ q_j(\bm{Z}_j) \right\}$を\alert{同時に最適化することはできない}
+		\newline
+		\item 下界$\mathcal{L}(q)$を、各因子$q_j(\bm{Z}_j)$について\alert{順番に最適化}することはできる
+	\end{enumerate} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item 分解$q(\bm{Z}) = \prod_i q_i(\bm{Z}_i)$によって$p(\bm{Z} | \bm{X})$を近似するときの、弊害を調べる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item $q(\bm{Z})$の分解による近似の性質
+	\begin{itemize}
+		\item 変分推論では、真の事後分布$q(\bm{Z}) = p(\bm{Z} | \bm{X})$を、分解により近似する
+		\item 分解で近似することによって、\alert{どのような不正確さが生じるのか?}
+	\end{itemize} \
+	
+	\item ガウス分布の分解による近似
+	\begin{itemize}
+		\item ガウス分布を、\alert{分解されたガウス分布}で近似することを考えてみよう
+		\item 分解による近似で、どのような問題が起こるのか考えてみよう
+		\newline
+		\item 2つの変数$\bm{z} = (z_1, z_2)$間には、\alert{相関がある}とする
+		\item $\bm{z}$はガウス分布$p(\bm{z}) = \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1})$に従っているとする
+		\begin{equation}
+			\bm{\mu} = \left[ \begin{array}{l} \mu_1 \\ \mu_2 \end{array} \right], \qquad \bm{\Lambda} = \left[ \begin{array}{ll} \Lambda_{11} & \Lambda_{12} \\ \Lambda_{21} & \Lambda_{22} \end{array} \right]
+		\end{equation}
+		
+		\item 精度行列$\bm{\Lambda}$は対称行列であるから、$\Lambda_{12} = \Lambda_{21}$
+		\newline
+		\item この分布$p(\bm{z})$を、分解されたガウス分布$q(\bm{z}) = q_1(z_1) q_2(z_2)$で近似する
+		\item 各因子$q_1(z_1), q_2(z_2)$の関数形については\alert{何の仮定も置いていない}ことに注意
+	\end{itemize} \
+	
+	\item 最適な因子$q_1(z_1), q_2(z_2)$の計算
+	\begin{itemize}
+		\item 最適な因子$q_1^*(z_1)$を、先程の結果を使って求める
+		\begin{equation}
+			\ln q_j(\bm{Z}_j) = \mathbb{E}_{i \neq j}[\ln p(\bm{X}, \bm{Z})] + \mathrm{Const.}
+		\end{equation}
+		
+		\item 従って、$q_1^*(z_1)$を計算する式は次のようになる
+		\begin{eqnarray}
+			&& \ln q_1^*(z_1) = \mathbb{E}_{z_2}[\ln p(\bm{z})] + \mathrm{Const.} \\
+			&& \mathbb{E}_{z_2}[\ln p(\bm{z})] = \int \ln p(\bm{z}) q_2(z_2) dz_2
+		\end{eqnarray}
+		
+		\item 上式の右辺では、$z_1$に依存する項だけを考えればよい
+		\item $z_1$の関数を求めようとしているため
+		\item $z_1$に依存しない項は、全て定数項(正規化定数)に含まれてしまうため
+		\newline
+		\item 従って$q_1^*(z_1)$は
+		\begin{eqnarray}
+			\ln q_1^*(z_1) &=& \mathbb{E}_{z_2}[\ln p(\bm{z})] + \mathrm{Const.} \\
+			&=& \mathbb{E}_{z_2} \left[ \ln \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1}) \right] + \mathrm{Const.}
+		\end{eqnarray}
+		但し
+		\begin{eqnarray}
+			&& \ln \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1}) \nonumber \\
+			&=& \ln \left( \frac{1}{(2\pi)^\frac{2}{2}} \frac{1}{|\bm{\Lambda}^{-1}|^\frac{1}{2}} \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \left( \bm{\Lambda}^{-1} \right)^{-1} (\bm{z} - \bm{\mu}) \right) \right) \nonumber \\
+			&=& \ln \left( \frac{1}{2\pi} \frac{1}{|\bm{\Lambda}|^{-\frac{1}{2}}} \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \right) \right) \nonumber \\
+			&=& -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) + \mathrm{Const.}
+		\end{eqnarray}
+		$z_1$に依存する項だけを取り出せば
+		\begin{eqnarray}
+			&& -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \nonumber \\
+			&=& -\frac{1}{2} \left[ z_1 - \mu_1, z_2 - \mu_2 \right] \left[ \begin{array}{ll} \Lambda_{11} & \Lambda_{12} \\ \Lambda_{21} & \Lambda_{22} \end{array} \right] \left[ \begin{array}{l} z_1 - \mu_1 \\ z_2 - \mu_2 \end{array} \right] \nonumber \\
+			&=& -\frac{1}{2} \bigg[ \Big\{ (\Lambda_{11} (z_1 - \mu_1) + \Lambda_{21} (z_2 - \mu_2) \Big\} (z_1 - \mu_1) + \nonumber \\
+			&& \qquad \Big\{ \Lambda_{12} (z_1 - \mu_1) + \Lambda_{22} (z_2 - \mu_2) \Big\} (z_2 - \mu_2) \bigg] \nonumber \\
+			&=& -\frac{1}{2} \left( \Lambda_{11} (z_1 - \mu_1)^2 + 2 \Lambda_{12} (z_1 - \mu_1)(z_2 - \mu_2) + \right. \nonumber \\
+			&& \qquad \left. \Lambda_{22} (z_2 - \mu_2)^2 \right) \quad (\because \Lambda_{21} = \Lambda_{12}) \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 - \Lambda_{12} (z_1 - \mu_1)(z_2 - \mu_2) + \mathrm{Const.}
+		\end{eqnarray}
+		これを代入して
+		\begin{eqnarray}
+			&& \ln \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1}) \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 - \Lambda_{12} (z_1 - \mu_1)(z_2 - \mu_2) + \mathrm{Const.}
+		\end{eqnarray}
+		従って
+		\begin{eqnarray}
+			&& \ln q_1^*(z_1) \nonumber \\
+			&=& \mathbb{E}_{z_2} \left[ \ln \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1}) \right] + \mathrm{Const.} \nonumber \\
+			&=& \mathbb{E}_{z_2} \left[ -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 - \Lambda_{12} (z_1 - \mu_1)(z_2 - \mu_2) \right] + \mathrm{Const.} \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} z_1^2 + \Lambda_{11} \mu_1 z_1 - \Lambda_{12} z_1 \left( \mathbb{E}[z_2] - \mu_2 \right) + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item これより、$q_1^*(z_1)$は次のように書ける
+		\begin{eqnarray}
+			&& q_1^*(z_1) \nonumber \\
+			&\propto& \exp \left( -\frac{1}{2} \Lambda_{11} z_1^2 + \Lambda_{11} \mu_1 z_1 - \Lambda_{12} z_1 \left( \mathbb{E}[z_2] - \mu_2 \right) \right) \nonumber \\
+			&=& \exp \left( -\frac{1}{2} \Lambda_{11} \left( z_1 - (\mu_1 - \Lambda_{11}^{-1} \Lambda_{12} (\mathbb{E}[z_2] - \mu_2)) \right)^2 + \right. \nonumber \\
+			&& \qquad \left. \frac{1}{2} \Lambda_{11} \left( \mu_1 - \Lambda_{11}^{-1} \Lambda_{12} (\mathbb{E}[z_2] - \mu_2) \right)^2 \right) \nonumber \\
+			&\propto& \exp \left( -\frac{1}{2 \Lambda_{11}^{-1}} \left( z_1 - (\mu_1 - \Lambda_{11}^{-1} \Lambda_{12} (\mathbb{E}[z_2] - \mu_2)) \right)^2 \right) \nonumber \\
+			&=& \mathcal{N}(z_1 | m_1, \Lambda_{11}^{-1})
+		\end{eqnarray}
+		但し$m_1$は次のようにおいた
+		\begin{equation}
+			m_1 = \mu_1 - \Lambda_{11}^{-1} \Lambda_{12} (\mathbb{E}[z_2] - \mu_2)
+		\end{equation}
+		
+		\item 対称性から、$q_2^*(z_2)$も次のように求められる
+		\begin{eqnarray}
+			\ln q_2^*(z_2) &=& \mathbb{E}_{z_2}[\ln p(\bm{z})] + \mathrm{Const.} \\
+			&=& \mathbb{E}_{z_2}[\ln \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1})] + \mathrm{Const.}
+		\end{eqnarray}
+		\begin{equation}
+			q_2^*(z_2) = \mathcal{N}(z_2 | m_2, \Lambda_{22}^{-1})
+		\end{equation}
+		但し$m_2$は次のようにおいた
+		\begin{equation}
+			m_2 = \mu_2 - \Lambda_{22}^{-1} \Lambda_{21} (\mathbb{E}[z_1] - \mu_1)
+		\end{equation}
+		
+		\item これより$q_1^*(z_1), q_2^*(z_2)$は
+		\begin{eqnarray}
+			q_1^*(z_1) &=& \mathcal{N}(z_1 | m_1, \Lambda_{11}^{-1}) \\
+			m_1 &=& \mu_1 - \Lambda_{11}^{-1} \Lambda_{12} (\mathbb{E}[z_2] - \mu_2) \\
+			q_2^*(z_2) &=& \mathcal{N}(z_2 | m_2, \Lambda_{22}^{-1}) \\
+			m_2 &=& \mu_2 - \Lambda_{22}^{-1} \Lambda_{21} (\mathbb{E}[z_1] - \mu_1)
+		\end{eqnarray}
+	\end{itemize} \
+	
+	\item 注意点1
+	\begin{itemize}
+		\item $q_1^*(z_1)$は、$q_2^*(z_2)$を使って計算される$p(\bm{z})$の期待値$\mathbb{E}[z_2]$に依存 (逆も成り立つ)
+		\item $q_1^*(z_1)$と、$q_2^*(z_2)$は\alert{相互に依存している}ため、2つを同時に求めることはできない
+		\item その代わりに、次のように最適化すればよい
+		\newline
+		\item $q_1(z_1), q_2(z_2)$を適当に初期化したあと、$q_1^*(z_1), q_2^*(z_2)$の式を使って、交互に$q_1(z_1)$と$q_2(z_2)$を更新していく(収束するまでこれを繰り返す)
+	\end{itemize} \
+	
+	\item 注意点2
+	\begin{itemize}
+		\item $q_1(z_1), q_2(z_2)$の具体的な関数形については、\alert{何の仮定も置かなかった}
+		\item $q_i^*(z_i)$がガウス分布だという仮定は置いていないが、$\KL (q || p)$を最適化する\alert{変分推論}によって、\alert{結果的にガウス分布が得られた}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{変分推論}
+
+\begin{itemize}
+	\item $\KL(q || p)$の最適化と$\KL(p || q)$の最適化の比較
+	\begin{itemize}
+		\item 上記の結果は、$\KL(q || p)$の最適化(エビデンス下界$\mathcal{L}(q)$の最適化)によって得た
+		\item $\KL(q || p)$ではなく、\color{red}$\KL(p || q)$を最適化したらどうなるか?\normalcolor
+		\item 変分推論ではない、もう一つの近似推論の方法である、\alert{EP法}で使われる考え方
+		\newline
+		\item $q(\bm{Z})$を$p(\bm{Z} | \bm{X})$に近づけたいのであれば、$\KL(q || p)$と$\KL(p || q)$のどちらを最小化してもよいはず
+		\item なぜなら、KLダイバージェンスは、確率分布間の(擬似的な)距離を表すため
+	\end{itemize} \
+	
+	\item $\KL(p || q)$の最適化
+	\begin{itemize}
+		\item $q(\bm{Z})$が平均場近似によって分解できるとき、$\KL(p || q)$を最適化したい
+		\newline
+		\item KLダイバージェンス$\KL(p || q)$は、次のように書ける
+		\begin{eqnarray}
+			\KL(p || q) &\equiv& \KL(p(\bm{Z} | \bm{X}) || q(\bm{Z})) \\
+			&=& -\int p(\bm{Z} | \bm{X}) \ln \frac{q(\bm{Z})}{p(\bm{Z} | \bm{X})} d\bm{Z} \\
+			&=& -\int p(\bm{Z} | \bm{X}) \left( \ln q(\bm{Z}) - \ln p(\bm{Z} | \bm{X}) \right) d\bm{Z} \\
+			&=& -\int p(\bm{Z} | \bm{X}) \ln q(\bm{Z}) d\bm{Z} - \nonumber \\
+			&& \qquad -\underbrace{\int p(\bm{Z} | \bm{X}) \ln p(\bm{Z} | \bm{X}) d\bm{Z}}_{\text{$q$には依存しない定数項}} \\
+			&=& -\int p(\bm{Z} | \bm{X}) \ln \prod_i q_i(\bm{Z}_i) d\bm{Z} + \mathrm{Const.} \\
+			&=& -\int p(\bm{Z} | \bm{X}) \sum_i \ln q_i(\bm{Z}_i) d\bm{Z} + \mathrm{Const.} \\
+			&=& -\sum_i \int p(\bm{Z} | \bm{X}) \ln q_i(\bm{Z}_i) d\bm{Z} + \mathrm{Const.}
+		\end{eqnarray}
+		定数項は、$p(\bm{Z} | \bm{X})$のエントロピーであり、$q$には依存しない
+		\newline
+		
+		\item 各因子$q_j(\bm{Z}_j)$について$\KL(p || q)$を最適化したい
+		\item このとき、$i \neq j$となる、全ての$q_i(\bm{Z}_i)$は\alert{固定する}
+		\newline
+		\item $q_j(\bm{Z}_j)$に依存する項を取り出せば、次のようになる
+		\begin{eqnarray}
+			&& \sum_i \int p(\bm{Z} | \bm{X}) \ln q_i(\bm{Z}_i) d\bm{Z} \nonumber \\
+			&=& \int p(\bm{Z} | \bm{X}) \ln q_j(\bm{Z}_j) d\bm{Z} \\
+			&=& \int p(\bm{Z} | \bm{X}) \ln q_j(\bm{Z}_j) d\bm{Z}_1 d\bm{Z}_2 \cdots d\bm{Z}_M \\
+			&=& \int p(\bm{Z} | \bm{X}) \ln q_j(\bm{Z}_j) d\bm{Z}_j \left( \prod_{i \neq j} d\bm{Z}_i \right) \\
+			&=& \int \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \ln q_j(\bm{Z}_j) d\bm{Z}_j
+		\end{eqnarray}
+		
+		\item $q_j(\bm{Z}_j)$は確率分布であるから、以下の条件を満たさなければならない
+		\begin{eqnarray}
+			&& \int q_j(\bm{Z}_j) d\bm{Z}_j = 1 \quad (\color{red}\text{規格化条件}\normalcolor ) \\
+			&& q_j(\bm{Z}_j) \ge 0
+		\end{eqnarray}
+		
+		\item 従って$\KL(p || q)$を$q_j(\bm{Z}_j)$について最適化するとき、\alert{ラグランジュの未定乗数法}を使って、規格化条件を組み込む必要がある
+		\newline
+		\item $q_j(\bm{Z}_j) \ge 0$という条件は、$\ln q_i(\bm{Z}_i)$という項が既にあるから、何もしなくても\alert{常に満たされる} (ラグランジュ関数に、制約条件を改めて取り入れる必要がない)
+		\newline
+		
+		\item 結局、ラグランジュ汎関数$\mathcal{L}[q_j]$は、次のようになる
+		\begin{eqnarray}
+			\mathcal{L}[q_j] &=& - \int \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \ln q_j(\bm{Z}_j) d\bm{Z}_j + \nonumber \\
+			&& \lambda \left( \int q_j(\bm{Z}_j) d\bm{Z}_j - 1 \right)
+		\end{eqnarray}
+		
+		\item 上記は$q_j(\bm{Z}_j)$についての\alert{汎関数}となっていることに注意
+		\newline
+		
+		\item 次の公式を使って、$\mathcal{L}[q_j]$を変分最適化する
+		\begin{equation}
+			\frac{\delta}{\delta y(x)} \int G(y(x), x) dx = \frac{\partial}{\partial y} G(y(x), x)
+		\end{equation}
+		
+		\item 従って
+		\begin{eqnarray}
+			&& \frac{\delta}{\delta q_j(\bm{Z}_j)} \mathcal{L}[q_j] \nonumber \\
+			&=& - \frac{\delta}{\delta q_j(\bm{Z}_j)} \int \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \ln q_j(\bm{Z}_j) d\bm{Z}_j + \nonumber \\
+			&& \qquad \frac{\delta}{\delta q_j(\bm{Z}_j)} \lambda \left( \int q_j(\bm{Z}_j) d\bm{Z}_j - 1 \right) \\
+			&=& - \frac{\partial}{\partial q_j} \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \ln q_j(\bm{Z}_j) + \nonumber \\
+			&& \qquad \lambda \frac{\partial}{\partial q_j} q_j(\bm{Z}_j) \\
+			&=& - \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \frac{1}{q_j(\bm{Z}_j)} + \lambda = 0
+		\end{eqnarray}
+		
+		\item これより、未定乗数$\lambda$は
+		\begin{eqnarray}
+			&& \lambda q_j(\bm{Z}_j) = \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \frac{1}{q_j(\bm{Z}_j)} \\
+			&\Rightarrow& \int \lambda q_j(\bm{Z}_j) d\bm{Z}_j = \int \underbrace{\left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right)}_{=p(\bm{Z}_j | \bm{X})} d\bm{Z}_j \\
+			&\Rightarrow& \lambda \underbrace{\int q_j(\bm{Z}_j) d\bm{Z}_j}_{=1} = \underbrace{\int p(\bm{Z}_j | \bm{X}) d\bm{Z}_j}_{=1} \\
+			&\Rightarrow& \lambda = 1
+		\end{eqnarray}
+		
+		\item 結局、最適解$q_j^*(\bm{Z}_j)$は次のようになる
+		\begin{eqnarray}
+			&& - \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \frac{1}{q_j(\bm{Z}_j)} + \lambda = 0 \\
+			&\Rightarrow& q_j^*(\bm{Z}_j) = \underbrace{\int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i}_{=p(\bm{Z}_j | \bm{X})} \\
+			&\Rightarrow& q_j^*(\bm{Z}_j) = p(\bm{Z}_j | \bm{X})
+		\end{eqnarray}
+		
+		\item $q_j^(\bm{Z}_j)$の最適解は、$p(\bm{Z} | \bm{X})$を、$i \neq j$である全ての$\bm{Z}_i$について周辺化した分布
+		\item これは閉じた解であり、繰り返しを必要としない
+		\newline
+		
+		\item 今回の場合は$p(\bm{z} | \bm{x}) = p(\bm{z})$の場合を考えており、かつ$p(\bm{z}) = \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1})$であった
+		\newline
+		
+		\item 従って、$q_1^*(z_1)$は
+		\begin{eqnarray}
+			&& q_1^*(z_1) \nonumber \\
+			&=& \int p(\bm{z}) dz_2 \nonumber \\
+			&=& \int \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1}) dz_2 \\
+			&=& \frac{1}{2\pi} \frac{1}{|\bm{\Lambda}|^{-\frac{1}{2}}} \int \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \right) dz_2
+		\end{eqnarray}
+		ここで
+		\begin{eqnarray}
+			&& -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \nonumber \\
+			&=& -\frac{1}{2} \left( \Lambda_{11} (z_1 - \mu_1)^2 + \right. \nonumber \\
+			&& \qquad \left. 2 \Lambda_{12} (z_1 - \mu_1)(z_2 - \mu_2) + \Lambda_{22} (z_2 - \mu_2)^2 \right) \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \nonumber \\
+			&& \qquad -\frac{1}{2} \left( 2 \Lambda_{12} (z_1 - \mu_1) z_2 + \Lambda_{22} (z_2 - \mu_2)^2 \right)
+		\end{eqnarray}
+		そして
+		\begin{eqnarray}
+			&& -\frac{1}{2} \left( 2 \Lambda_{12} (z_1 - \mu_1) z_2 + \Lambda_{22} (z_2 - \mu_2)^2 \right) \nonumber \\
+			&=& -\frac{1}{2} \left( \Lambda_{22} z_2^2 - 2 \Lambda_{22} \mu_2 z_2 + 2 \Lambda_{12} (z_1 - \mu_1) z_2 + \Lambda_{22} \mu_2^2 \right) \\
+			&=& -\frac{1}{2} \left( \Lambda_{22} z_2^2 - 2 \left( \Lambda_{22} \mu_2 - \Lambda_{12} (z_1 - \mu_1) \right) z_2 + \Lambda_{22} \mu_2^2 \right) \\
+			&=& -\frac{1}{2} \left( \Lambda_{22} \left( z_2 - \Lambda_{22}^{-1} \left( \Lambda_{22} \mu_2 - \Lambda_{12} (z_1 - \mu_1) \right) \right)^2 - \right. \nonumber \\
+			&& \qquad \left. \Lambda_{22} \left( \Lambda_{22}^{-1} \left( \Lambda_{22} \mu_2 - \Lambda_{12} (z_1 - \mu_1) \right) \right)^2 + \Lambda_{22} \mu_2^2 \right) \\
+			&=& -\frac{1}{2} \left( \Lambda_{22} \left( z_2 - \Lambda_{22}^{-1} m \right)^2 - \Lambda_{22}^{-1} m^2 + \Lambda_{22} \mu_2^2 \right)
+		\end{eqnarray}
+		ゆえ($m = \Lambda_{22} \mu_2 - \Lambda_{12} (z_1 - \mu_1)$とおいた)
+		\begin{eqnarray}
+			&& -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \Lambda_{22} \mu_2^2 - \nonumber \\
+			&& \qquad \frac{1}{2} \Lambda_{22} \left( z_2 - \Lambda_{22}^{-1} m \right)^2 + \frac{1}{2} \Lambda_{22}^{-1} m^2
+		\end{eqnarray}
+		これより
+		\begin{eqnarray}
+			&& \int \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \right) dz_2 \nonumber \\
+			&=& \exp \left( -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \right. \nonumber \\
+			&& \qquad \left. \Lambda_{22} \mu_2^2 + \frac{1}{2} \Lambda_{22}^{-1} m^2 \right) \nonumber \\
+			&& \qquad \int \exp \left( - \frac{1}{2} \Lambda_{22} \left( z_2 - \Lambda_{22}^{-1} m \right)^2 \right) dz_2
+		\end{eqnarray}
+		であって、右側の積分は、中身が(正規化されていない)ガウス分布であるから
+		\begin{eqnarray}
+			&& \int \exp \left( - \frac{1}{2} \Lambda_{22} \left( z_2 - \Lambda_{22}^{-1} m \right)^2 \right) dz_2 \nonumber \\
+			&=& (2\pi \Lambda_{22}^{-1}) \cdot \int \frac{1}{(2\pi \Lambda_{22}^{-1})^\frac{1}{2}} \exp \left( - \frac{1}{2} \Lambda_{22} \left( z_2 - \Lambda_{22}^{-1} m \right)^2 \right) dz_2 \nonumber \\
+			&=& 2\pi \Lambda_{22}^{-1}
+		\end{eqnarray}
+		となって、$z_2$を積分により消去できるほか、指数の残りの部分から、$z_1$に依存する項だけを取り出して
+		\begin{eqnarray}
+			&& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \Lambda_{22} \mu_2^2 + \frac{1}{2} \Lambda_{22}^{-1} m^2 \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \Lambda_{22} \mu_2^2 + \nonumber \\
+			&& \qquad \frac{1}{2} \Lambda_{22}^{-1} \left( \Lambda_{22} \mu_2 - \Lambda_{12} (z_1 - \mu_1) \right)^2 \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \Lambda_{22} \mu_2^2 + \nonumber \\
+			&& \qquad \frac{1}{2} \Lambda_{22} \mu_2^2 - \mu_2 \Lambda_{12} (z_1 - \mu_1) + \nonumber \\
+			&& \qquad \frac{1}{2} \Lambda_{22}^{-1} \Lambda_{12}^2 (z_1 - \mu_1)^2 \\
+			&=& -\frac{1}{2} \left( \Lambda_{11} - \Lambda_{22}^{-1} \Lambda_{12}^2 \right) (z_1 - \mu_1)^2 + \mathrm{Const.} \nonumber \\
+			&=& -\frac{1}{2} \left( \Lambda_{11} - \Lambda_{22}^{-1} \Lambda_{12}^2 \right) (z_1 - \mu_1)^2 + \mathrm{Const.} \\
+			&=& -\frac{1}{2} \left( \Lambda_{11} - \Lambda_{22}^{-1} \Lambda_{12}^2 \right) z_1^2 + \nonumber \\
+			&& \qquad \frac{1}{2} \left( \Lambda_{11} - \Lambda_{22}^{-1} \Lambda_{12}^2 \right) \mu_1 z_1 + \mathrm{Const.}
+		\end{eqnarray}
 	\end{itemize}
 \end{itemize}
 
