@@ -117,8 +117,8 @@
 		
 		\item 但し、$\mathcal{L}(q)$と$\KL (q || p)$は次のように定義した
 		\begin{eqnarray}
-			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} \\
-			\KL (q || p) &=& -\int q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X})}{q(\bm{Z})}
+			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} d\bm{Z} \\
+			\KL (q || p) &=& -\int q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X})}{q(\bm{Z})} d\bm{Z}
 		\end{eqnarray}
 	\end{itemize} \
 		
@@ -139,7 +139,9 @@
 		\item または、負の\alert{変分自由エネルギー}(Variational free energy)という
 		\newline
 		
-		\item $\mathcal{L}(q)$を$q$について最大化し、従って$\KL (q || p)$を最小化できれば、分布$q(\bm{Z})$を真の事後分布$p(\bm{Z} | \bm{X})$に近づけられる
+		\item $\ln p(\bm{X})$は$q$には依存しないため、定数項とみなせる
+		\item 従って、$\mathcal{L}(q)$を$q$について最大化することは、$\KL (q || p)$の最小化に相当
+		\item このとき、分布$q(\bm{Z})$を真の事後分布$p(\bm{Z} | \bm{X})$に近づけられる
 		\item $q(\bm{Z}) = p(\bm{Z} | \bm{X})$が分かれば、データ$\bm{X}$から、\color{red}潜在変数やパラメータ$\bm{Z}$が得られる\normalcolor
 	\end{itemize} \
 	
@@ -400,14 +402,51 @@
 
 \end{frame}
 
-\subsection{MAP推定と変分推論}
+\subsection{MAP推定および最尤推定と変分推論}
 
 \begin{frame}{変分推論}
 
 \begin{itemize}
-	\item MAP推定の変分推論からの導出
+	\item MAP推定および最尤推定の変分推論からの導出
 	\begin{itemize}
-		\item % TODO
+		\item 変分推論で得たいのは、潜在変数に関する事後分布$p(\bm{Z} | \bm{X})$である
+		\item この変分推論の\alert{特殊ケース}が、MAP推定や最尤推定であることを導く
+		\newline
+		\item 変分推論では、エビデンス下界$\mathcal{L}(q)$を$q$について最大化し、従って\color{red}$\KL(q || p)$を最小化\normalcolor する
+		\item いま、分布$q(\bm{Z})$が、次の\alert{デルタ関数}であるとする
+		\item 特定の値$\bm{Z} = \widehat{\bm{Z}}$についてのみ確率が非零になる、無限に鋭い分布
+		\begin{equation}
+			q(\bm{Z}) = \delta(\bm{Z} - \widehat{\bm{Z}})
+		\end{equation}
+		
+		\item このとき、KLダイバージェンス$\KL(q || p)$は次のようになる
+		\begin{eqnarray}
+			&& \KL(q || p) \nonumber \\
+			&\equiv& \KL(q(\bm{Z}) || p(\bm{Z} | \bm{X})) \nonumber \\
+			&=& - \int q(\bm{Z}) \ln \frac{p(\bm{Z} | \bm{X})}{q(\bm{Z})} d\bm{Z} \nonumber \\
+			&=& - \int q(\bm{Z}) \ln p(\bm{Z} | \bm{X}) d\bm{Z} + \int q(\bm{Z}) \ln q(\bm{Z}) d\bm{Z} \\
+			&=& - \int \delta(\bm{Z} - \widehat{\bm{Z}}) \ln p(\bm{Z} | \bm{X}) d\bm{Z} + \nonumber \\
+			&& \qquad \int \delta(\bm{Z} - \widehat{\bm{Z}}) \ln \delta(\bm{Z} - \widehat{\bm{Z}}) d\bm{Z} \\
+			&=& - \ln p(\widehat{\bm{Z}} | \bm{X}) + \ln \delta(\widehat{\bm{Z}} - \widehat{\bm{Z}}) \\
+			&=& - \ln p(\widehat{\bm{Z}} | \bm{X}) + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item これを$q(\bm{Z})$について最小化することは、$\widehat{\bm{Z}}$について最小化することに相当する
+		\item よって$\widehat{\bm{Z}}$の最適解$\widehat{\bm{Z}}^*$は
+		\begin{eqnarray}
+			\widehat{\bm{Z}}^* &=& \argmin_{\widehat{\bm{Z}}} \left( -\ln p(\widehat{\bm{Z}} | \bm{X}) \right) \\
+			&=& \argmax_{\widehat{\bm{Z}}} \ln p(\widehat{\bm{Z}} | \bm{X}) \\
+			&=& \argmax_{\widehat{\bm{Z}}} p(\widehat{\bm{Z}} | \bm{X}) \\
+			&=& \argmax_{\widehat{\bm{Z}}} p(\bm{X} | \widehat{\bm{Z}}) p(\widehat{\bm{Z}})
+		\end{eqnarray}
+		となるから、\alert{MAP推定}(\alert{最大事後確率}推定)の式と一致する
+		
+		\item 更に、$p(\widehat{\bm{Z}}) = \mathrm{Const.}$、即ち$\widehat{\bm{Z}}$に関する事前の情報がないとすると
+		\begin{eqnarray}
+			\widehat{\bm{Z}}^* &=& \argmax_{\widehat{\bm{Z}}} p(\bm{X} | \widehat{\bm{Z}}) p(\widehat{\bm{Z}}) \nonumber \\
+			&=& \argmax_{\widehat{\bm{Z}}} p(\bm{X} | \widehat{\bm{Z}})
+		\end{eqnarray}
+		となるから、これは\alert{最尤推定}の式に一致する
 	\end{itemize}
 \end{itemize}
 
@@ -420,12 +459,15 @@
 \begin{itemize}
 	\item これまでの話の流れ
 	\begin{enumerate}
-		\item %TODO
-	\end{enumerate}
+		\item 変分推論から、MAP推定と最尤推定が導出できることを確認した
+		\newline
+		\item MAP推定は、$q(\bm{Z})$を無限に鋭い確率分布(デルタ関数)として、$\bm{Z}$が特定の値しか取らないと仮定した場合であった
+		\item 最尤推定は、MAP推定において、$\bm{Z}$の事前確率分布を設けない場合であった
+	\end{enumerate} \
 	
 	\item これからの話の流れ
 	\begin{itemize}
-		\item 分解$q(\bm{Z}) = \prod_i q_i(\bm{Z}_i)$によって$p(\bm{Z} | \bm{X})$を近似するときの、弊害を調べる
+		\item 話題を変えて、分解$q(\bm{Z}) = \prod_i q_i(\bm{Z}_i)$によって$p(\bm{Z} | \bm{X})$を近似するときの、弊害を調べる
 	\end{itemize}
 \end{itemize}
 
