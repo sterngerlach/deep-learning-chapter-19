@@ -97,7 +97,7 @@
 	
 	\item 注意点
 	\begin{itemize}
-		\item 観測変数と潜在変数をまとめて、$\bm{X}, \bm{Z}$とおく
+		\item 観測変数と潜在変数をそれぞれ、$\bm{X}, \bm{Z}$とおく
 		\item $p(\bm{X})$は、確率モデルからデータ$\bm{X}$が生起する確率である
 		\item \alert{データからみたモデルの好み}と解釈できるから、$p(\bm{X})$を\alert{モデルエビデンス}という
 	\end{itemize}
@@ -440,13 +440,172 @@
 			&=& \argmax_{\widehat{\bm{Z}}} p(\bm{X} | \widehat{\bm{Z}}) p(\widehat{\bm{Z}})
 		\end{eqnarray}
 		となるから、\alert{MAP推定}(\alert{最大事後確率}推定)の式と一致する
+		\newline
 		
+		\item これより、MAP推定は、KLダイバージェンス$\KL(q || p)$の最小化、従って、\color{red}エビデンス下界$\mathcal{L}(q)$の最大化と等価\normalcolor である
+		\newline
 		\item 更に、$p(\widehat{\bm{Z}}) = \mathrm{Const.}$、即ち$\widehat{\bm{Z}}$に関する事前の情報がないとすると
 		\begin{eqnarray}
 			\widehat{\bm{Z}}^* &=& \argmax_{\widehat{\bm{Z}}} p(\bm{X} | \widehat{\bm{Z}}) p(\widehat{\bm{Z}}) \nonumber \\
 			&=& \argmax_{\widehat{\bm{Z}}} p(\bm{X} | \widehat{\bm{Z}})
 		\end{eqnarray}
 		となるから、これは\alert{最尤推定}の式に一致する
+		\newline
+		
+		\item 下界$\mathcal{L}(q)$の式から導くことも可能である
+		\begin{eqnarray}
+			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} d\bm{Z} \nonumber \\
+			&=& \int q(\bm{Z}) \ln p(\bm{X}, \bm{Z}) d\bm{Z} - \int q(\bm{Z}) \ln q(\bm{Z}) d\bm{Z} \\
+			&=& \int \delta(\bm{Z} - \widehat{\bm{Z}}) \ln p(\bm{X}, \bm{Z}) d\bm{Z} - \nonumber \\
+			&& \qquad \int \delta(\bm{Z} - \widehat{\bm{Z}}) \ln \delta(\bm{Z} - \widehat{\bm{Z}}) d\bm{Z} \\
+			&=& \ln p(\bm{X}, \widehat{\bm{Z}}) - \ln \delta(\widehat{\bm{Z}} - \widehat{\bm{Z}}) \\
+			&=& \ln p(\bm{X}, \widehat{\bm{Z}}) + \mathrm{Const.} \\
+			&=& \ln p(\bm{X} | \widehat{\bm{Z}}) p(\widehat{\bm{Z}}) + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item これより、下界$\mathcal{L}(q)$の最大化は、$\widehat{\bm{Z}}$に関する$p(\widehat{\bm{Z}} | \bm{X}) \propto p(\bm{X} | \widehat{\bm{Z}}) p(\widehat{\bm{Z}})$の最大化、\color{red}即ちMAP推定と等価\normalcolor である
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{MAP推定の例}
+
+\begin{itemize}
+	\item スパース符号化
+	\begin{itemize}
+		\item ここではMAP推定の例として、スパース符号化を扱う(\alert{変分推論の例ではない})
+		\newline
+		\item データ$\bm{x}$に対する潜在変数$\bm{z}$に、\alert{スパース性}を持たせる
+		\item そのために、スパース性を導く事前分布(\alert{ラプラス事前分布})を、潜在変数に用いる
+		\newline
+		
+		\item データ$\bm{x}$を$D$次元、また潜在変数$\bm{z}$を$K$次元とする
+		\item データ$\bm{x}$に対応する潜在変数を$\bm{z}_i$と表し、$\bm{z}_i$の第$k$成分を$z_{ik}$とする
+		\begin{eqnarray}
+			p(z_{ik} | \lambda) &=& \frac{\lambda}{2} \exp \left( -\lambda |z_{ik}| \right) \\
+			p(\bm{z}_i | \lambda) &=& \prod_k p(z_{ik}) = \prod_k \frac{\lambda}{2} \exp \left( -\lambda |z_{ik}| \right)
+		\end{eqnarray}
+		
+		\item データに関する事後分布$p(\bm{x}_i | \bm{z}_i, \bm{W}, \bm{b}, \beta)$を、次で定義する
+		\begin{eqnarray}
+			&& p(\bm{x}_i | \bm{z}_i, \bm{W}, \bm{b}, \beta) \nonumber \\
+			&=& \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i + \bm{b}, \beta^{-1} \bm{I}) \\
+			&=& \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\beta^{-1} \bm{I}|^\frac{1}{2}} \exp \left( -\frac{1}{2} \left( \bm{x}_i - \left( \bm{W} \bm{z}_i + \bm{b} \right) \right)^T \right. \nonumber \\
+			&& \qquad \left( \beta^{-1} \bm{I} \right)^{-1} \left( \bm{x}_i - \left( \bm{W} \bm{z}_i + \bm{b} \right) \right) \bigg) \\
+			&=& \frac{1}{(2\pi \beta^{-1})^\frac{D}{2}} \exp \left( -\frac{\beta}{2} \left( \bm{x}_i - \left( \bm{W} \bm{z}_i + \bm{b} \right) \right)^T \right. \nonumber \\
+			&& \qquad \left( \bm{x}_i - \left( \bm{W} \bm{z}_i + \bm{b} \right) \right) \bigg)
+		\end{eqnarray}
+		
+		\item データ$\bm{x}_i$は、対応する潜在変数$\bm{z}_i$に、線形変換$\bm{W} \bm{z}_i + \bm{b}$を施し、更に分散$\beta^{-1} \bm{I}$のガウスノイズを足すことで、生成されると考える
+	\end{itemize} \
+	
+	\item パラメータについての補足
+	\begin{itemize}
+		\item 今回は、$\bm{b} = 0$とおいて\alert{バイアスを無視}したものを考える
+		\item $\lambda$と、精度$\beta$は\alert{ハイパーパラメータ}であり、予め決められているとする
+		\item そこでこれ以降、次のように確率分布を表現する
+		\begin{eqnarray}
+			&& p(\bm{z}_i | \lambda) = p(\bm{z}_i) \\
+			&& p(\bm{x}_i | \bm{z}_i, \bm{W}, \bm{b}, \beta) = p(\bm{x}_i | \bm{z}_i, \bm{W})
+		\end{eqnarray}
+		
+		\item $\bm{X}$を、全てのデータ$\left\{ \bm{x}_i \right\}$を集めた行列とする(第$i$行ベクトルが$\bm{x}_i^T$)
+		\item $\bm{Z}$についても同様に、全ての潜在変数$\left\{ \bm{z}_i \right\}$を集めた行列として定める(第$i$行ベクトルが$\bm{z}_i^T$)
+		%\item \alert{完全にベイズ的なモデル}では、ハイパーパラメータについても事前分布を導入するが、今回はそうはしない
+		%\item 完全にベイズ的であれば、パラメータは明示的に書く必要がなく、潜在変数の中に含まれる
+		%\item このとき、重み$\bm{W}$も潜在変数$\bm{Z}$に含まれる($\widehat{\bm{Z}} = \left\{ \bm{W}, \bm{Z} \right\}$)
+	\end{itemize} \
+	
+	\item スパース符号化の学習
+	\begin{itemize}
+		\item 尤度関数$p(\bm{z}_i | \bm{x}_i)$は、\alert{表現することすら困難}であるため、最尤推定は利用できない
+		\item そこで、最尤推定の代わりに\alert{MAP推定}を利用することで、最適なパラメータが得られる
+		\newline
+		\item 最大化するのは、以下の事後分布$p(\bm{Z} | \bm{X}, \bm{W})$である
+		\begin{eqnarray}
+			p(\bm{Z} | \bm{X}, \bm{W}) &=& \frac{p(\bm{X}, \bm{Z} | \bm{W})}{p(\bm{X})} \\
+			&\propto& p(\bm{X}, \bm{Z} | \bm{W}) \\
+			&=& p(\bm{X} | \bm{Z}, \bm{W}) p(\bm{Z}) \\
+			&=& \left( \prod_i p(\bm{x}_i | \bm{z}_i, \bm{W}) \right) \left( \prod_i p(\bm{z}_i) \right) \\
+			&=& \prod_i p(\bm{x}_i | \bm{z}_i, \bm{W}) p(\bm{z}_i)
+		\end{eqnarray}
+		
+		\item 対数を取って最大化してもよいので、最大化する量は結局
+		\begin{eqnarray}
+			\ln p(\bm{Z} | \bm{X}, \bm{W}) &=& \ln \left( \prod_i p(\bm{x}_i | \bm{z}_i, \bm{W}) p(\bm{z}_i) \right) \\
+			&=& \sum_i \left( \ln p(\bm{x}_i | \bm{z}_i, \bm{W}) + \ln p(\bm{z}_i) \right) \\
+			&=& \sum_i \ln p(\bm{x}_i | \bm{z}_i, \bm{W}) + \sum_i \ln p(\bm{z}_i)
+		\end{eqnarray}
+		各項を求めると
+		\begin{eqnarray}
+			&& \sum_i \ln p(\bm{x}_i | \bm{z}_i, \bm{W}) \nonumber \\
+			&=& \sum_i \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \beta^{-1} \bm{I}) \nonumber \\
+			&=& \sum_i \ln \left( \frac{1}{(2\pi \beta^{-1})^\frac{D}{2}} \exp \left( -\frac{\beta}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \left( \bm{x}_i - \bm{W} \bm{z}_i \right) \right) \right) \nonumber \\
+			&=& \sum_i \left( -\frac{D}{2} \ln 2\pi - \frac{D}{2} \ln \beta^{-1} - \right. \nonumber \\
+			&& \qquad \left. \frac{\beta}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \left( \bm{x}_i - \bm{W} \bm{z}_i \right) \right) \nonumber \\
+			&=& \sum_i \left( -\frac{\beta}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \left( \bm{x}_i - \bm{W} \bm{z}_i \right) \right) + \mathrm{Const.} \nonumber \\
+			&=& -\frac{\beta}{2} \sum_i \left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \left( \bm{x}_i - \bm{W} \bm{z}_i \right) + \mathrm{Const.} \nonumber \\
+			&=& -\frac{\beta}{2} \sum_i \left( \bm{X} - \bm{Z} \bm{W}^T \right)_{i:} \left( \left( \bm{X} - \bm{Z} \bm{W}^T \right)_{i:} \right)^T + \mathrm{Const.} \\
+			&=& -\frac{\beta}{2} \sum_{i, j} \left( \left( \bm{X} - \bm{Z} \bm{W}^T \right) \odot \left( \bm{X} - \bm{Z} \bm{W}^T \right) \right)_{i, j} + \mathrm{Const.} \\
+			&=& -\frac{\beta}{2} \sum_{i, j} \left( \bm{X} - \bm{Z} \bm{W}^T \right)_{i, j}^2 + \mathrm{Const.} \\
+			&=& -\frac{\beta}{2} || \bm{X} - \bm{Z} \bm{W}^T ||_2^2 + \mathrm{Const.}
+		\end{eqnarray}
+		また
+		\begin{eqnarray}
+			&& \sum_i \ln p(\bm{z}_i) \nonumber \\
+			&=& \sum_i \ln \prod_j \left( \frac{\lambda}{2} \exp \left( -\lambda |z_{ij}| \right) \right) \nonumber \\
+			&=& \sum_i \sum_j \left( \ln \frac{\lambda}{2} - \lambda |z_{ij}| \right) \nonumber \\
+			&=& -\lambda \sum_{i, j} |z_{ij}| + \mathrm{Const.} \\
+			&=& -\lambda \sum_{i, j} |\bm{Z}_{i, j}| + \mathrm{Const.} \\
+			&=& -\lambda || \bm{Z} ||_1 + \mathrm{Const.}
+		\end{eqnarray}
+		のようになる
+		\newline
+		
+		\item $\odot$はアダマール積、$\bm{A}_{i:}$は行列$\bm{A}$の第$i$行目のベクトルを表す
+		
+		\item また、行列のノルム$|| \bm{A} ||_p$は次で定義される
+		\begin{equation}
+			|| \bm{A} ||_p = \left( \sum_{i, j} |A_{i, j}|^p \right)^\frac{1}{p}
+		\end{equation}
+		$p = 1, p = 2$のときは次のようになる
+		\begin{equation}
+			|| \bm{A} ||_1 = \sum_{i, j} |A_{i, j}|, \quad || \bm{A} ||_2 = \sqrt{\sum_{i, j} A_{i, j}^2}
+		\end{equation}
+		
+		\item これより、$|| \bm{A} ||_1$は、\color{red}行列$\bm{A}$の各要素の絶対値の和\normalcolor を表す
+		\item また$|| \bm{A} ||_2$は、行列$\bm{A}$の各要素の二乗和の平方根を表し、\alert{フロベニウスノルム}$|| \bm{A} ||_F$ともよばれる
+		\item 従って、$|| \bm{A} ||_2^2$は、\color{red}行列$\bm{A}$の各要素の二乗和\normalcolor である
+		\newline
+		\item 上記から
+		\begin{eqnarray}
+			&& \ln p(\bm{Z} | \bm{X}, \bm{W}) \nonumber \\
+			&=& \sum_i \ln p(\bm{x}_i | \bm{z}_i, \bm{W}) + \sum_i \ln p(\bm{z}_i) \nonumber \\
+			&=& -\frac{\beta}{2} || \bm{X} - \bm{Z} \bm{W}^T ||_2^2 - \lambda || \bm{Z} ||_1 + \mathrm{Const.}
+		\end{eqnarray}
+		となるので、$\ln p(\bm{Z} | \bm{X}, \bm{W})$の最大化は、以下の\color{red}関数$J(\bm{Z}, \bm{W})$の最小化\normalcolor である
+		\begin{equation}
+			J(\bm{Z}, \bm{W}) = || \bm{X} - \bm{Z} \bm{W}^T ||_2^2 + || \bm{Z} ||_1
+		\end{equation}
+	\end{itemize} \
+		
+	\item スパース符号化の学習方法のまとめ
+	\begin{itemize}
+		\item 関数$J(\bm{Z}, \bm{W})$を、$\bm{Z}$と$\bm{W}$について\alert{交互に最小化}すればよい
+		\newline
+		\item $p(\bm{Z} | \bm{X}, \bm{W})$の最大化は、$p(\bm{X} | \bm{Z}, \bm{W}) p(\bm{Z})$の最大化、即ち$J(\bm{Z}, \bm{W})$の最小化と等価であった
+		\item 従って、$J(\bm{Z}, \bm{W})$の各パラメータ$\bm{Z}, \bm{W}$についての最小化は、事後確率を大きくする方向に働く
+		\newline
+		\item 関数$J(\bm{Z}, \bm{W})$をもう一度みてみよう
+		\begin{equation}
+			J(\bm{Z}, \bm{W}) = || \bm{X} - \bm{Z} \bm{W}^T ||_2^2 + || \bm{Z} ||_1
+		\end{equation}
+		
+		\item 第1項は、明らかに\alert{再構成誤差}を表している
+		\item 第2項は、データ$\bm{X}$の表現$\bm{Z}$がスパースになるように付加した、\alert{正則化項}である
+		\newline
+		\item $\bm{Z} \bm{W}^T$は、データ$\bm{X}$の内部表現$\bm{Z}$に、重み$\bm{W}$を掛けることで、データ$\bm{X}$を復元したもの
 	\end{itemize}
 \end{itemize}
 
@@ -463,6 +622,8 @@
 		\newline
 		\item MAP推定は、$q(\bm{Z})$を無限に鋭い確率分布(デルタ関数)として、$\bm{Z}$が特定の値しか取らないと仮定した場合であった
 		\item 最尤推定は、MAP推定において、$\bm{Z}$の事前確率分布を設けない場合であった
+		\newline
+		\item MAP推定の例として、スパース符号化を扱った
 	\end{enumerate} \
 	
 	\item これからの話の流れ
@@ -915,6 +1076,10 @@
 		\newline
 		\item $\KL(p || q)$の最小化で得られる$q(\bm{z})$は、\alert{分散が大きくなる方向に制御されていて}、それと直交する方向の分散は、過大評価されている
 		\item 非常に低い確率しか持たないはずの領域にも、多くの確率質量が割り当てられている
+		\newline
+		\item 変分推論では、計算コストの観点から$\KL(q || p)$の方を用いる
+		\item $\KL(q || p)$の計算には、$q$に関する期待値の評価が含まれるので、$q$を単純な形に制限することで、必要な期待値を単純化できる
+		\item $\KL(p || q)$の計算には、真の事後分布$p$に関する期待値の計算が必要である
 	\end{itemize} \
 	
 	\item 違いが生じる理由
@@ -984,7 +1149,9 @@
 	
 	\item これからの話の流れ
 	\begin{itemize}
-		\item %TODO
+		\item 変分推論の具体的な例について更に見ていく
+		\item 離散潜在変数のモデル(\alert{二値スパース符号化モデル})に変分推論を適用する
+		\item 連続潜在変数の場合は、簡単な確率モデルを使って、変分推論を試してみる
 	\end{itemize}
 \end{itemize}
 
