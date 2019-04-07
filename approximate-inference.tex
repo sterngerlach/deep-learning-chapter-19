@@ -521,7 +521,7 @@
 	
 	\item スパース符号化の学習
 	\begin{itemize}
-		\item 尤度関数$p(\bm{z}_i | \bm{x}_i)$は、\alert{表現することすら困難}であるため、最尤推定は利用できない
+		\item 事後分布$p(\bm{z}_i | \bm{x}_i)$は、\alert{表現することすら困難}であるため、最尤推定による手法(EMアルゴリズムなど)は利用できない
 		\item そこで、最尤推定の代わりに\alert{MAP推定}を利用することで、最適なパラメータが得られる
 		\newline
 		\item 最大化するのは、以下の事後分布$p(\bm{Z} | \bm{X}, \bm{W})$である
@@ -1219,8 +1219,8 @@
 			&=& \prod_k \left( \sigma(b_{ik}) \right)^{z_{ik}} \left( \sigma(-b_{ik}) \right)^{1 - z_{ik}}
 		\end{eqnarray}
 		
-		\item $p(\bm{z}_i | \bm{x}_i)$は\alert{複雑な分布}であり、表現することも、計算することもできない
-		\item 従って、最尤推定により学習することはできない
+		\item 事後分布$p(\bm{z}_i | \bm{x}_i)$は\alert{複雑}であり、表現することも、計算することもできない
+		\item 従って、最尤推定の手法(EMアルゴリズム)により学習することはできない
 		\newline
 		
 		\item 例えばバイアス$b_{ik}$に関する微分を考えると
@@ -1267,7 +1267,7 @@
 \begin{itemize}
 	\item 変分推論による二値スパース符号化モデルの学習
 	\begin{itemize}
-		\item 最尤推定を諦める代わりに、変分推論を使うことで、困難を解決できる
+		\item 最尤推定の手法を諦める代わりに、変分推論を使うことで、困難を解決できる
 		\item 分布$p(\bm{z}_i | \bm{x}_i)$を$q(\bm{z}_i)$で表現し、更に平均場近似を行う
 		\item 但し$\bm{z}_i = \left[ z_{i1}, z_{i2}, \ldots, z_{iK} \right]^T$とする
 		\begin{equation}
@@ -1437,8 +1437,8 @@
 			&& \qquad \left. \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) \right) \Bigg)
 		\end{eqnarray}
 		
-		\item この式には\alert{あまり美的魅力がない}(Somewhat unappealing aesthetically)が、対数尤度よりは計算しやすい
-		\item 対数尤度$\ln p(\bm{Z} | \bm{X})$を最大化する代わりに、上記の下界$\mathcal{L}(q)$を$q$について最大化することができる
+		\item この式には\alert{あまり美的魅力がない}(Somewhat unappealing aesthetically)が、事後分布よりは計算しやすい
+		\item 事後分布$\ln p(\bm{Z} | \bm{X})$を最大化する代わりに、上記の下界$\mathcal{L}(q)$を$q$について最大化することができる
 		\newline
 		\item データ$\bm{x}_i$に対するパラメータ$\left\{ \widehat{z_{i1}}, \ldots, \widehat{z_{iK}} \right\}$をまとめて、\color{red}ベクトル$\widehat{\bm{z}}_i$として記述\normalcolor する
 		\item パラメータ$\widehat{\bm{z}}_i = \left[ \widehat{z_{i1}}, \ldots, \widehat{z_{iK}} \right]^T$は、データ$\bm{x}_i$に対応する潜在変数$\bm{z}$の各要素が、$1$となる確率を集めたベクトルである
@@ -1530,6 +1530,100 @@
 			&=& b_{ik} - \ln \widehat{z_{ik}} + \ln (1 - \widehat{z_{ik}}) + \nonumber \\
 			&& \qquad \bm{x}_i^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} - \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}}
 		\end{eqnarray}
+		
+		\item これを$0$と等置して、$\widehat{z_{ik}}$について解くと次のようになる
+		\begin{eqnarray}
+			&& \ln \widehat{z_{ik}} - \ln (1 - \widehat{z_{ik}}) = b_{ik} + \nonumber \\
+			&& \qquad \bm{x}_i^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} - \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}}
+		\end{eqnarray}
+		右辺を$A$とおけば
+		\begin{eqnarray}
+			&& \ln \widehat{z_{ik}} - \ln (1 - \widehat{z_{ik}}) = A \\
+			&\Rightarrow& \ln \frac{\widehat{z_{ik}}}{1 - \widehat{z_{ik}}} = A \nonumber \\
+			&\Rightarrow& \frac{\widehat{z_{ik}}}{1 - \widehat{z_{ik}}} = \exp A \nonumber \\
+			&\Rightarrow& \frac{1}{1 - \widehat{z_{ik}}} - 1 = \exp A \nonumber \\
+			&\Rightarrow& 1 - \widehat{z_{ik}} = \frac{1}{1 + \exp A} \nonumber \\
+			&\Rightarrow& \widehat{z_{ik}} = 1 - \frac{1}{1 + \exp A} \nonumber \\
+			&\Rightarrow& \widehat{z_{ik}} = \frac{\exp A}{1 + \exp A} \nonumber \\
+			&\Rightarrow& \widehat{z_{ik}} = \frac{1}{1 + \exp (-A)} \\
+			&\Rightarrow& \widehat{z_{ik}} = \sigma(A)
+		\end{eqnarray}
+		従って、不動点方程式は
+		\begin{equation}
+			\widehat{z_{ik}} = \sigma \left( b_{ik} + \bm{x}_i^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} - \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}} \right)
+		\end{equation}
+	\end{itemize} \
+	
+	\item 不動点方程式の観察
+	\begin{itemize}
+		\item 不動点方程式は次で表された
+		\begin{equation}
+			\widehat{z_{ik}} = \sigma \left( b_{ik} + \bm{x}_i^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} - \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}} \right)
+		\end{equation}
+		
+		\item 第2項$\bm{x}_i^T \bm{\beta} \bm{W}_{:k}$は、潜在変数のユニット$k$に対する入力
+		\item 第3項$- \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k}$は、隠れユニット$k$から自身への入力
+		\item 第4項$- \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}}$は、他の隠れユニット$l \neq k$から隠れユニット$k$への入力
+		\newline
+		
+		\item これより、平均場不動点方程式は、回帰結合型ニューラルネットワーク(RNN)との関係があることが分かる
+		\newline
+		
+		\item 隠れユニット$k$と$l$は、それらの重みベクトル$\bm{W}_{:l}$と$\bm{W}_{:k}$が互いに同調するとき(\alert{似たような重みを持っているとき})に、\alert{互いに抑制し合う}
+		\item 即ち、2つの隠れユニット$k, l$が、共に入力を説明するとき(入力から同じような表現を抽出するとき)、\alert{入力を最もよく説明するユニットのみがアクティブ}になる(強く活性化される)
+		\item これはユニット間の競合の一形態である
+		\newline
+		
+		\item 従って、実際には多峰性の事後分布かもしれないが、そのうちの1つのみが選択される(図\ref{fig:comparison-between-kl-divergence-2}の(b)と(c)参照)
+		\newline
+		
+		\item 不動点方程式を更に以下のように変形する
+		\begin{equation}
+			\widehat{z_{ik}} = \sigma \left( b_{ik} + \left( \bm{x}_i - \sum_{l \neq k} \bm{W}_{:l} \widehat{z_{il}} \right)^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} \right)
+		\end{equation}
+		
+		\item これより、ユニット$k$への入力は、$\bm{x}_i$ではなく$\bm{x}_i - \sum_{l \neq k} \bm{W}_{:l} \widehat{z_{il}}$であるとみなせる
+		\item ユニット$k$への入力は、他の全てのユニットによる$\bm{x}_i$の再構成と、実際の入力$\bm{x}_i$との誤差である
+		\item ユニット$k$は、この残差誤差を符号化していると分かるので、スパース符号化は、\alert{反復自己符号化器}とみなせる
+		\newline
+		
+		\item スパース符号化では、入力$\bm{x}_i$の符号化($\widehat{z_{ik}}$の計算)と、復号($\sum_{l \neq k} \bm{W}_{:l} \widehat{z_{il}}$の計算)を繰り返す
+		\item この反復のたびに、再構成の誤差を修正していく
+	\end{itemize} \
+	
+	\item ダンピング
+	\begin{itemize}
+		\item 1つのユニットの更新則を(不動点方程式として)導出した
+		\item 複数のユニットを同時に更新することは、二値スパース符号化モデルでは通常できない
+		\item 但し、\alert{ダンピング}という発見的手法を使えば可能になる
+		\newline
+		
+		\item 各要素$\widehat{z_{ik}}$についての最適値を計算し、その値の変化の方向に、他の要素$\widehat{z_{il}}$を小さいステップで動かす
+		\item 下界$\mathcal{L}(q)$が増加することはもはや保証されないが、多くの場合はうまくいく
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{離散潜在変数の変分推論のまとめ}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item 離散潜在変数における変分推論の具体例として、二値スパース符号化モデルをみた
+		\newline
+		\item 事後分布$p(\bm{Z} | \bm{X})$が複雑になるので、最尤推定(EMアルゴリズム)が使えない
+		\item 代わりに、別の分布$q(\bm{Z})$を使って事後分布を近似することにした
+		\newline
+		\item エビデンス下界$\mathcal{L}(q)$を苦労して求めた
+		\item 更に、下界$\mathcal{L}(q)$を(各パラメータについて)最大化するための、不動点方程式を導出した
+		\newline
+		\item 不動点方程式を観察し、回帰結合型ニューラルネットワークや、自己符号化器との関係を考えた
+	\end{enumerate} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item 連続潜在変数に対する変分推論を、簡単な確率モデルを使って、試してみよう
 	\end{itemize}
 \end{itemize}
 
