@@ -170,6 +170,8 @@
 		\newline
 		\item 計算可能な分布のクラスの中で、\alert{可能な限り豊かな表現力を持つ}ものを選びたい
 		\item 表現力が豊かな分布を使うことは、真の事後分布を、精度良く近似することにつながるのであって、従って\alert{過学習は発生しない}
+		\newline
+		\item 分布$q(\bm{Z})$は、$q(\bm{Z} | \bm{X})$と書くこともある
 	\end{itemize}
 \end{itemize}
 
@@ -1152,6 +1154,382 @@
 		\item 変分推論の具体的な例について更に見ていく
 		\item 離散潜在変数のモデル(\alert{二値スパース符号化モデル})に変分推論を適用する
 		\item 連続潜在変数の場合は、簡単な確率モデルを使って、変分推論を試してみる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{離散潜在変数の変分推論}
+
+\begin{frame}{離散潜在変数の変分推論}
+
+\begin{itemize}
+	\item 離散潜在変数をもつ変分推論の概要
+	\begin{itemize}
+		\item ここでは単純な場合を扱う
+		\item データ$\bm{x}_i$に対する潜在変数$\bm{z}_i$は、\alert{各要素が二値である}とする
+		\item データ$\bm{x}$は$D$次元、潜在変数$\bm{z}$は$K$次元とする
+		\newline
+		\item 分布$q(\bm{z}_i | \bm{x}_i)$は、平均場近似によって、次のように分解できるとする
+		\begin{equation}
+			q(\bm{z}_i | \bm{x}_i) = \prod_k q(z_{ik} | \bm{x}_i)
+		\end{equation}
+		
+		\item 潜在変数は二値であるから、\color{red}$q(z_{ik} = 1 | \bm{x}_i) = \widehat{z_{ik}}$\normalcolor と書くことにする
+		\item このとき、$q(z_{ik} | \bm{x}_i)$は次のようになる
+		\begin{equation}
+			q(z_{ik} | \bm{x}_i) = \widehat{z_{ik}}^{z_{ik}} \left( 1 - \widehat{z_{ik}} \right)^{\left( 1 - z_{ik} \right)}
+		\end{equation}
+		
+		\item 各パラメータ$\widehat{z_{ik}}$について、下界$\mathcal{L}(q)$を順番に最適化することを、$\mathcal{L}(q)$が収束するまで繰り返し行う
+		\item 即ち、以下の不動点方程式を、各$\widehat{z_{ik}}$について繰り返し解く
+		\begin{equation}
+			\frac{\partial}{\partial \widehat{z_{ik}}} \mathcal{L}(q) = 0
+		\end{equation}
+		
+		\item 離散潜在変数の場合は、単なる標準的な最適化問題を解くことになる
+	\end{itemize} \
+	
+	\item 二値スパース符号化モデル
+	\begin{itemize}
+		\item 二値スパース符号化モデルでのデータ生成過程は、次のようになる
+		\newline
+		
+		\item 各データ$\bm{x}_i$には、潜在変数$\bm{z}_i \in \left\{ 0, 1 \right\}^K$が対応する
+		\item $\bm{z}_i$に対し、重み$\bm{W}$を用いて\alert{線形変換}を施し、更に\alert{ガウスノイズ}を足し合わせることで、データ$\bm{x}_i$が生成される
+		\newline
+		
+		\item 潜在変数$\bm{z}_i$は、$K$次元ベクトルであり、その\color{red}各要素は$0$または$1$\normalcolor である
+		\newline
+		
+		\item 従って、確率分布は次のようになる
+		\begin{eqnarray}
+			p(z_{ik} = 1) &=& \sigma(b_{ik}) \\
+			p(\bm{x}_i | \bm{z}_i) &=& \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1})
+		\end{eqnarray}
+		
+		\item $\sigma(\cdot)$はシグモイド関数、$\bm{b}_i = \left[ b_{i1}, \ldots, b_{iK} \right]^T$は学習可能な\alert{バイアス}、$\bm{W}$は学習可能な\alert{重み行列}、$\bm{\beta}$は学習可能な\alert{対角精度行列}である
+		\item $\bm{\beta} = \diag \left( \beta_1, \beta_2, \ldots, \beta_D \right)$と書ける
+		\newline
+		
+		\item $p(\bm{z}_i)$は次のように計算できる
+		\begin{eqnarray}
+			p(\bm{z}_i) &=& \prod_k p(z_{ik}) \\
+			&=& \prod_k \left( \sigma(b_{ik}) \right)^{z_{ik}} \left( 1 - \sigma(b_{ik}) \right)^{1 - z_{ik}} \\
+			&=& \prod_k \left( \sigma(b_{ik}) \right)^{z_{ik}} \left( \sigma(-b_{ik}) \right)^{1 - z_{ik}}
+		\end{eqnarray}
+		
+		\item $p(\bm{z}_i | \bm{x}_i)$は\alert{複雑な分布}であり、表現することも、計算することもできない
+		\item 従って、最尤推定により学習することはできない
+		\newline
+		
+		\item 例えばバイアス$b_{ik}$に関する微分を考えると
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial b_{ik}} \ln p(\bm{z}_i | \bm{x}_i) \nonumber \\
+			&=& \frac{\partial}{\partial b_{ik}} \ln \frac{p(\bm{x}_i, \bm{z}_i)}{p(\bm{x}_i)} \\
+			&=& \frac{\partial}{\partial b_{ik}} \left( \ln p(\bm{x}_i, \bm{z}_i) - \ln p(\bm{x}_i) \right)
+		\end{eqnarray}
+		であって、第1項の$p(\bm{x}_i, \bm{z}_i)$は容易に計算できるが、第2項について考えると
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial b_{ik}} \ln p(\bm{x}_i) \nonumber \\
+			&=& \frac{1}{p(\bm{x}_i)} \frac{\partial}{\partial b_{ik}} p(\bm{x}_i) \\
+			&=& \frac{1}{p(\bm{x}_i)} \frac{\partial}{\partial b_{ik}} \sum_{\bm{z}_i} p(\bm{x}_i, \bm{z}_i) \\
+			&=& \frac{1}{p(\bm{x}_i)} \frac{\partial}{\partial b_{ik}} \sum_{\bm{z}_i} p(\bm{z}_i) p(\bm{x}_i | \bm{z}_i) \\
+			&=& \frac{1}{p(\bm{x}_i)} \sum_{\bm{z}_i} p(\bm{x}_i | \bm{z}_i) \frac{\partial}{\partial b_{ik}} p(\bm{z}_i) \\
+			&=& \sum_{\bm{z}_i} \frac{1}{p(\bm{x}_i)} \frac{p(\bm{x}_i, \bm{z}_i)}{p(\bm{z}_i)} \frac{\partial}{\partial b_{ik}} p(\bm{z}_i) \\
+			&=& \sum_{\bm{z}_i} p(\bm{z}_i | \bm{x}_i) \frac{1}{p(\bm{z}_i)} \frac{\partial}{\partial b_{ik}} p(\bm{z}_i) \\
+			&=& \sum_{\bm{z}_i} p(\bm{z}_i | \bm{x}_i) \frac{\partial}{\partial b_{ik}} \ln p(\bm{z}_i) \\
+			&=& \mathbb{E}_{\bm{z}_i \sim p(\bm{z}_i | \bm{x}_i)} \left[ \frac{\partial}{\partial b_{ik}} \ln p(\bm{z}_i) \right]
+		\end{eqnarray}
+		何とか$p(\bm{z}_i)$と$p(\bm{x}_i | \bm{z}_i)$を使って計算できないかと試行錯誤したが、結局、\color{red}$p(\bm{z}_i | \bm{x}_i)$に関する期待値の計算が必要\normalcolor になった
+		\newline
+		
+		\item $p(\bm{x}_i, \bm{z}_i)$と、$p(\bm{z}_i | \bm{x}_i)$のグラフ構造を次の図\ref{fig:graph-structure-of-binary-sparse-coding-model}に示す
+		\item 図では、$\bm{h} = \bm{z}$、$\bm{v} = \bm{x}$のように読み替える必要がある
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{離散潜在変数の変分推論}
+
+\begin{figure}[h]
+	\centering
+	\includegraphics[clip,scale=0.6,trim=2cm 20cm 2cm 2cm,page=656]{../goodfellow-deep-learning.pdf}
+	\caption{二値スパース符号化モデルのグラフ構造(4つの潜在変数をもつ場合)}
+	\label{fig:graph-structure-of-binary-sparse-coding-model}
+\end{figure}
+
+\end{frame}
+
+\begin{frame}{離散潜在変数の変分推論}
+
+\begin{itemize}
+	\item 変分推論による二値スパース符号化モデルの学習
+	\begin{itemize}
+		\item 最尤推定を諦める代わりに、変分推論を使うことで、困難を解決できる
+		\item 分布$p(\bm{z}_i | \bm{x}_i)$を$q(\bm{z}_i)$で表現し、更に平均場近似を行う
+		\item 但し$\bm{z}_i = \left[ z_{i1}, z_{i2}, \ldots, z_{iK} \right]^T$とする
+		\begin{equation}
+			q(\bm{z}_i | \bm{x}_i) = \prod_k q(z_{ik} | \bm{x}_i)
+		\end{equation}
+		
+		\item 潜在変数の各要素は二値であるから、各$q(z_{ik} | \bm{x}_i)$は\alert{ベルヌーイ分布}とすればよい
+		\item 即ち、\color{red}$q(z_{ik} = 1 | \bm{x}_i) = \widehat{z_{ik}}$\normalcolor とする
+		\item $\widehat{z_{ik}} \neq 0, 1$という制約を課すことで、$\ln \widehat{z_{ik}}$を計算できる
+		\newline
+		\item このようにすれば、潜在変数$z_{ik}, z_{il} (k \neq l)$間の\alert{相関を断ち切る}ことができる
+		\item 先程の図\ref{fig:graph-structure-of-binary-sparse-coding-model}の右側から、潜在変数間の辺を、全て消し去ることになる
+		
+		\item これで、平均場近似により、因数分解可能な$q$を表現することができる
+		\begin{eqnarray}
+			q(\bm{z}_i | \bm{x}_i) &=& \prod_k q(z_{ik} | \bm{x}_i) \\
+			&=& \prod_k \widehat{z_{ik}}^{z_{ik}} \left( 1 - \widehat{z_{ik}} \right)^{1 - z_{ik}}
+		\end{eqnarray}
+		\begin{eqnarray}
+			q(\bm{Z} | \bm{X}) &=& \prod_i q(\bm{z}_i | \bm{x}_i) \\
+			&=& \prod_i \prod_k \widehat{z_{ik}}^{z_{ik}} \left( 1 - \widehat{z_{ik}} \right)^{1 - z_{ik}}
+		\end{eqnarray}
+		
+		\item ソフトウェア上では、丸め誤差などによって$\widehat{z_{ik}}$が$0$や$1$になり、計算を続行できなくなるかもしれない
+		\item これを回避するためには、パラメータ$\widetilde{\bm{z}}_i$を使って二値スパース符号化モデルを学習させる
+		\item そして、$\widehat{\bm{z}}_i = \sigma(\widetilde{\bm{z}}_i)$の関係によって、$\widehat{\bm{z}}_i = \left[ \widehat{z_{i1}}, \ldots, \widehat{z_{iK}} \right]^T$を得るようにする
+		\item $\ln \widehat{z_{ik}} = \ln \sigma(\widetilde{z_{ik}}) = -\zeta(-\widetilde{z_{ik}})$によって、コンピュータ上で安全に$\ln \widehat{z_{ik}}$を計算できる ($\zeta(\cdot)$はソフトプラス関数)
+		\newline
+		
+		\item 変分推論のために、まずはエビデンス下界$\mathcal{L}(q)$を計算する
+		\begin{eqnarray}
+			&& \mathcal{L}(q) \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z} | \bm{X})} \\
+			&=& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln \frac{p(\bm{Z}) p(\bm{X} | \bm{Z})}{q(\bm{Z} | \bm{X})} \\
+			&=& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \left( \ln p(\bm{Z}) + \ln p(\bm{X} | \bm{Z}) - \ln q(\bm{Z} | \bm{X}) \right) \\
+			&=& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \left( \ln p(\bm{Z}) - \ln q(\bm{Z} | \bm{X}) \right) + \nonumber \\
+			&& \qquad \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln p(\bm{X} | \bm{Z})
+		\end{eqnarray}
+		
+		\item $q(\bm{Z} | \bm{X})$についての期待値を取っていることに注意する
+		\item 全ての$\bm{Z}$についての和を取ればよいので、第1項は次のようになる
+		\begin{eqnarray}
+			&& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \left( \ln p(\bm{Z}) - \ln q(\bm{Z} | \bm{X}) \right) \nonumber \\
+			&=& \sum_i \sum_k \sum_{z_{ik}} q(z_{ik} | \bm{x}_i) \left( \ln p(z_{ik}) - \ln q(z_{ik} | \bm{x}_i) \right) \\
+			&=& \sum_i \sum_k q(z_{ik} = 1 | \bm{x}_i) \left( \ln p(z_{ik} = 1) - \ln q(z_{ik} = 1 | \bm{x}_i) \right) + \nonumber \\
+			&& \qquad q(z_{ik} = 0 | \bm{x}_i) \left( \ln p(z_{ik} = 0) - \ln q(z_{ik} = 0 | \bm{x}_i) \right) \\
+			&=& \sum_i \sum_k \left\{ \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \right. \nonumber \\
+			&& \qquad \left. \left( 1 - \widehat{z_{ik}} \right) \left( \ln \left( 1 - \sigma(b_{ik}) \right) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right\} \\
+			&=& \sum_i \sum_k \left\{ \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \right. \nonumber \\
+			&& \qquad \left. \left( 1 - \widehat{z_{ik}} \right) \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right\}
+		\end{eqnarray}
+		
+		\item また第2項は、次のようになる
+		\begin{eqnarray}
+			&& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln p(\bm{X} | \bm{Z}) \nonumber \\
+			&=& \sum_i \sum_{\bm{z}_i} q(\bm{z}_i | \bm{x}_i) \ln p(\bm{x}_i | \bm{z}_i) \\
+			&=& \sum_i \sum_{\bm{z}_i} q(\bm{z}_i | \bm{x}_i) \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1})
+		\end{eqnarray}
+		
+		\item 但し、$\ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1})$は次のように分解できる
+		\begin{eqnarray}
+			&& \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1}) \nonumber \\
+			&=& \ln \Bigg( \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{\beta}^{-1}|^\frac{1}{2}} \nonumber \\
+			&& \qquad \exp \left( -\frac{1}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \bm{\beta} \left( \bm{x}_i - \bm{W} \bm{z}_i \right) \right) \Bigg) \\
+			&=& -\frac{D}{2} \ln 2\pi - \frac{1}{2} \ln |\bm{\beta}^{-1}| - \nonumber \\
+			&& \qquad \frac{1}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \bm{\beta} \left( \bm{x}_i - \bm{W} \bm{z}_i \right)
+		\end{eqnarray}
+		
+		\item ここで、$\bm{\beta} = \diag \left( \beta_1, \beta_2, \ldots, \beta_D \right)$であるので
+		\begin{eqnarray}
+			\ln |\bm{\beta}^{-1}| &=& \ln |\bm{\beta}|^{-1} = - \ln |\bm{\beta}| \nonumber \\
+			&=& - \ln \prod_{j = 1}^D \beta_j = - \sum_{j = 1}^D \ln \beta_j
+		\end{eqnarray}
+		となるほか
+		\begin{equation}
+			\left( \bm{x}_i - \bm{W} \bm{z}_i \right)^T \bm{\beta} \left( \bm{x}_i - \bm{W} \bm{z}_i \right) = \sum_{j = 1}^D \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2
+		\end{equation}
+		であるから
+		\begin{eqnarray}
+			&& \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1}) \nonumber \\
+			&=& -\frac{1}{2} \sum_j \ln 2\pi + \frac{1}{2} \sum_j \ln \beta_j - \frac{1}{2} \sum_j \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \\
+			&=& \frac{1}{2} \sum_j \left( -\ln 2\pi + \ln \beta_j - \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \\
+			&=& \frac{1}{2} \sum_j \left( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \\
+			&=& \frac{1}{2} \sum_j \left( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right)
+		\end{eqnarray}
+		
+		\item 上式の対数を外すと、確率分布の積になっていることが分かる
+		\begin{eqnarray}
+			&& \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1}) \nonumber \\
+			&=& \exp \left( \sum_j \left( \frac{1}{2} \ln \frac{\beta_j}{2\pi} - \frac{1}{2} \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \right) \\
+			&=& \prod_j \exp \left( \frac{1}{2} \ln \frac{\beta_j}{2\pi} - \frac{1}{2} \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \\
+			&=& \prod_j \exp \left( \frac{1}{2} \ln \frac{\beta_j}{2\pi} \right) \exp \left( - \frac{1}{2} \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \\
+			&=& \prod_j \left( \frac{\beta_j}{2\pi} \right)^\frac{1}{2} \exp \left( - \frac{1}{2} \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \\
+			&=& \prod_j \left( \frac{1}{(2\pi \beta_j^{-1})^\frac{1}{2}} \exp \left( - \frac{1}{2} \beta_j \left( x_{ij} - \bm{W}_{j:} \bm{z}_i \right)^2 \right) \right) \\
+			&=& \prod_j \mathcal{N}(x_{ij} | \bm{W}_{j:} \bm{z}_i, \beta_j^{-1})
+		\end{eqnarray}
+		
+		\item 精度行列$\bm{\beta}$は対角行列であるから、$\bm{x}_i$の各成分は\alert{無相関}である
+		\item 従って、$\mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1})$は、各成分$x_{ij}$についての確率$\mathcal{N}(x_{ij} | \bm{W}_{j:} \bm{z}_i, \beta_j^{-1})$の積として、記述できる
+		\newline
+		
+		\item さて、第2項は
+		\begin{eqnarray}
+			&& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln p(\bm{X} | \bm{Z}) \nonumber \\
+			&=& \sum_i \sum_{\bm{z}_i} q(\bm{z}_i | \bm{x}_i) \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1}) \\
+			&=& \sum_i \mathbb{E}_{\bm{z}_i \sim q(\bm{z}_i | \bm{x}_i)} \left[ \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i, \bm{\beta}^{-1}) \right] \\
+			&=& \sum_i \mathbb{E}_{\bm{z}_i} \left[ \frac{1}{2} \sum_j \left( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right) \right] \\
+			&=& \frac{1}{2} \sum_i \sum_j \mathbb{E}_{\bm{z}_i} \left[ \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right] \\
+			&=& \frac{1}{2} \sum_i \sum_j \left( \ln \frac{\beta_j}{2\pi} - \beta_j \mathbb{E}_{\bm{z}_i} \left[ \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right] \right)
+		\end{eqnarray}
+		ここで
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i} \left[ \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right] \nonumber \\
+			&=& \mathbb{E}_{\bm{z}_i} \left[ x_{ij}^2 - 2 x_{ij} \sum_k W_{jk} z_{ik} + \left( \sum_k W_{jk} z_{ik} \right)^2 \right] \\
+			&=& x_{ij}^2 - 2 x_{ij} \mathbb{E}_{\bm{z}_i} \left[ \sum_k W_{jk} z_{ik} \right] + \mathbb{E}_{\bm{z}_i} \left[ \left( \sum_k W_{jk} z_{ik} \right)^2 \right]
+		\end{eqnarray}
+		各項を順番に計算すると
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i} \left[ \sum_k W_{jk} z_{ik} \right] \nonumber \\
+			&=& \sum_k W_{jk} \mathbb{E}_{\bm{z}_i} \left[ z_{ik} \right] \\
+			&=& \sum_k W_{jk} \mathbb{E}_{z_{ik}} \left[ z_{ik} \right] \\
+			&=& \sum_k W_{jk} \left( q(z_{ik} = 1 | \bm{x}_i) \cdot 1 + q(z_{ik} = 0 | \bm{x}_i) \cdot 0 \right) \\
+			&=& \sum_k W_{jk} \widehat{z_{ik}}
+		\end{eqnarray}
+		また
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i} \left[ \left( \sum_k W_{jk} z_{ik} \right)^2 \right] \nonumber \\
+			&=& \mathbb{E}_{\bm{z}_i} \left[ \sum_k \sum_l W_{jk} W_{jl} z_{ik} z_{il} \right] \\
+			&=& \mathbb{E}_{\bm{z}_i} \left[ \sum_k \left( W_{jk}^2 z_{ik}^2 + \sum_{l \neq k} \left( W_{jk} W_{jl} z_{ik} z_{il} \right) \right) \right] \\
+			&=& \sum_k \left( W_{jk}^2 \mathbb{E}_{\bm{z}_i} \left[ z_{ik}^2 \right] + \sum_{l \neq k} W_{jk} W_{jl} \mathbb{E}_{\bm{z}_i} \left[ z_{ik} z_{il} \right] \right)
+		\end{eqnarray}
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i} \left[ z_{ik}^2 \right] \nonumber \\
+			&=& \mathbb{E}_{z_{ik}} \left[ z_{ik}^2 \right] \\
+			&=& q(z_{ik} = 1 | \bm{x}_i) \cdot 1^2 + q(z_{ik} = 0 | \bm{x}_i) \cdot 0^2 \\
+			&=& \widehat{z_{ik}}
+		\end{eqnarray}
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i} \left[ z_{ik} z_{il} \right] \nonumber \\
+			&=& \mathbb{E}_{\bm{z}_i} \left[ z_{ik} \right] \mathbb{E}_{\bm{z}_i} \left[ z_{il} \right] \quad (\because \text{$z_{ik}$と$z_{il}$は独立であるため}) \\
+			&=& \mathbb{E}_{z_{ik}} \left[ z_{ik} \right] \mathbb{E}_{z_{il}} \left[ z_{il} \right] \\
+			&=& \widehat{z_{ik}} \widehat{z_{il}}
+		\end{eqnarray}
+		従って
+		\begin{eqnarray}
+			&& \mathbb{E}_{\bm{z}_i} \left[ \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right] \nonumber \\
+			&=& x_{ij}^2 - 2 x_{ij} \mathbb{E}_{\bm{z}_i} \left[ \sum_k W_{jk} z_{ik} \right] + \mathbb{E}_{\bm{z}_i} \left[ \left( \sum_k W_{jk} z_{ik} \right)^2 \right] \\
+			&=& x_{ij}^2 - 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} + \nonumber \\
+			&& \qquad \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right)
+		\end{eqnarray}
+		これより
+		\begin{eqnarray}
+			&& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln p(\bm{X} | \bm{Z}) \nonumber \\
+			&=& \frac{1}{2} \sum_i \sum_j \Bigg( \ln \frac{\beta_j}{2\pi} - \beta_j \mathbb{E}_{\bm{z}_i} \left[ \left( x_{ij} - \sum_k W_{jk} z_{ik} \right)^2 \right] \Bigg) \\
+			&=& \frac{1}{2} \sum_i \sum_j \Bigg( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij}^2 - 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} + \right. \nonumber \\
+			&& \qquad \left. \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) \right) \Bigg)
+		\end{eqnarray}
+		
+		\item よって、エビデンス下界$\mathcal{L}(q)$は
+		\begin{eqnarray}
+			&& \mathcal{L}(q) \nonumber \\
+			&=& \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \left( \ln p(\bm{Z}) - \ln q(\bm{Z} | \bm{X}) \right) + \nonumber \\
+			&& \qquad \sum_{\bm{Z}} q(\bm{Z} | \bm{X}) \ln p(\bm{X} | \bm{Z}) \\
+			&=& \sum_i \sum_k \left\{ \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \right. \nonumber \\
+			&& \qquad \left. \left( 1 - \widehat{z_{ik}} \right) \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right\} + \nonumber \\
+			&& \qquad \frac{1}{2} \sum_i \sum_j \Bigg( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij}^2 - 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} + \right. \nonumber \\
+			&& \qquad \left. \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) \right) \Bigg)
+		\end{eqnarray}
+		
+		\item この式には\alert{あまり美的魅力がない}(Somewhat unappealing aesthetically)が、対数尤度よりは計算しやすい
+		\item 対数尤度$\ln p(\bm{Z} | \bm{X})$を最大化する代わりに、上記の下界$\mathcal{L}(q)$を$q$について最大化することができる
+		\newline
+		\item データ$\bm{x}_i$に対するパラメータ$\left\{ \widehat{z_{i1}}, \ldots, \widehat{z_{iK}} \right\}$をまとめて、\color{red}ベクトル$\widehat{\bm{z}}_i$として記述\normalcolor する
+		\item パラメータ$\widehat{\bm{z}}_i = \left[ \widehat{z_{i1}}, \ldots, \widehat{z_{iK}} \right]^T$は、データ$\bm{x}_i$に対応する潜在変数$\bm{z}$の各要素が、$1$となる確率を集めたベクトルである
+		\newline
+		\item $\widehat{z_{ik}} = q(z_{ik} = 1 | \bm{x}_i)$と定義されていることに注意
+		\newline
+		\item よってベクトル$\widehat{\bm{z}}_i$は、データ$\bm{x}_i$に対応する\alert{二値のスパース符号}である
+	\end{itemize} \
+	
+	\item 勾配上昇法を利用しない理由
+	\begin{itemize}
+		\item データ$\bm{X}$と、潜在変数$\bm{Z}$についての勾配上昇法を用いれば、学習することが可能
+		\item 但し、その方法では、\color{red}各$\bm{x}_i$について\alert{平均場パラメータ}$\widehat{\bm{z}}_i$を保管する必要\normalcolor がある
+		\item \alert{各事例について、動的に更新されるベクトルが必要}であるため、そのアルゴリズムを、数十億もの事例に対して適用することは困難である
+		\newline
+		\item また、\alert{収束するまで繰り返し計算を行う}ため、データ$\bm{x}$から、パラメータ$\widehat{\bm{z}}_i$を素早く抽出することができない
+		\item 現実にデプロイされるときは、$\widehat{\bm{z}}_i$をリアルタイムで計算できなければならない
+	\end{itemize} \
+	
+	\item \alert{不動点方程式}による平均場パラメータ$\widehat{\bm{z}}_i$の推定
+	\begin{itemize}
+		\item 勾配上昇法の代わりに、不動点方程式を使ってパラメータ$\widehat{z_{ik}}$を素早く推定できる
+		\newline
+		\item $\nabla_{\widehat{\bm{z}}_i} \mathcal{L}(q) = 0$をみたす、$\widehat{\bm{z}}_i$の極大値を見つけ出す
+		\item $\widehat{\bm{z}}_i$の全ての成分について同時に解くことはできないので、各成分$\widehat{z_{ik}}$について繰り返し解く
+		\newline
+		
+		\item 即ち、各パラメータ$\widehat{z_{ik}}$について、下界$\mathcal{L}(q)$を順番に最適化する手続きを、\color{red}$\mathcal{L}(q)$の収束基準を満たすまで繰り返す\normalcolor
+		\begin{equation}
+			\frac{\partial}{\partial \widehat{z_{ik}}} \mathcal{L}(q) = 0
+		\end{equation}
+		
+		\item 平均場不動点方程式を導くためには、$\mathcal{L}(q)$を$\widehat{z_{ik}}$で微分する必要がある
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \widehat{z_{ik}}} \mathcal{L}(q) \nonumber \\
+			&=& \frac{\partial}{\partial \widehat{z_{ik}}} \sum_i \sum_k \left\{ \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \right. \nonumber \\
+			&& \qquad \left. \left( 1 - \widehat{z_{ik}} \right) \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right\} + \nonumber \\
+			&& \qquad \frac{\partial}{\partial \widehat{z_{ik}}} \frac{1}{2} \sum_i \sum_j \Bigg( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij}^2 - 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} + \right. \nonumber \\
+			&& \qquad \left. \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) \right) \Bigg)
+		\end{eqnarray}
+		
+		\item 前半部分は
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \widehat{z_{ik}}} \sum_i \sum_k \left\{ \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \right. \nonumber \\
+			&& \qquad \left. \left( 1 - \widehat{z_{ik}} \right) \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right\} \\
+			&=& \frac{\partial}{\partial \widehat{z_{ik}}} \left\{ \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \right. \nonumber \\
+			&& \qquad \left. \left( 1 - \widehat{z_{ik}} \right) \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right\} \\
+			&=& \frac{\partial}{\partial \widehat{z_{ik}}} \widehat{z_{ik}} \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \nonumber \\
+			&& \qquad \frac{\partial}{\partial \widehat{z_{ik}}} \left( 1 - \widehat{z_{ik}} \right) \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \\
+			&=& \left( \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} \right) + \widehat{z_{ik}} \left( -\frac{1}{\widehat{z_{ik}}} \right) + \nonumber \\
+			&& \qquad \left( - \left( \ln \sigma(-b_{ik}) - \ln \left( 1 - \widehat{z_{ik}} \right) \right) \right) + \nonumber \\
+			&& \qquad \left( 1 - \widehat{z_{ik}} \right) \frac{1}{1 - \widehat{z_{ik}}} \\
+			&=& \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} - 1 - \ln \sigma(-b_{ik}) + \ln (1 - \widehat{z_{ik}}) + 1 \\
+			&=& \ln \sigma(b_{ik}) - \ln \widehat{z_{ik}} - \ln \sigma(-b_{ik}) + \ln (1 - \widehat{z_{ik}}) \\
+			&=& - \zeta(-b_{ik}) - \ln \widehat{z_{ik}} + \zeta(b_{ik}) + \ln (1 - \widehat{z_{ik}}) \\
+			&=& \left( \zeta(b_{ik}) - \zeta(-b_{ik}) \right) - \ln \widehat{z_{ik}} + \ln (1 - \widehat{z_{ik}}) \\
+			&=& b_{ik} - \ln \widehat{z_{ik}} + \ln (1 - \widehat{z_{ik}})
+		\end{eqnarray}
+		
+		\item ここで、シグモイド関数$\sigma(\cdot)$と、ソフトプラス関数$\zeta(\cdot)$に関する、以下の公式を用いた
+		\begin{eqnarray}
+			&& \ln \sigma(x) = -\zeta(-x) \\
+			&& \zeta(x) - \zeta(-x) = x
+		\end{eqnarray}
+		
+		\item 後半部分は
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \widehat{z_{ik}}} \frac{1}{2} \sum_i \sum_j \Bigg( \ln \frac{\beta_j}{2\pi} - \beta_j \left( x_{ij}^2 - 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} + \right. \nonumber \\
+			&& \qquad \left. \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) \right) \Bigg) \\
+			&=& \frac{1}{2} \sum_j \beta_j \frac{\partial}{\partial \widehat{z_{ik}}} \left( 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} - \right. \nonumber \\
+			&& \qquad \left. \sum_k \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) \right) \\
+			&=& \frac{1}{2} \sum_j \beta_j \frac{\partial}{\partial \widehat{z_{ik}}} \left( 2 x_{ij} \sum_k W_{jk} \widehat{z_{ik}} - \right. \nonumber \\
+			&& \qquad \left( W_{jk}^2 \widehat{z_{ik}} + \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{ik}} \widehat{z_{il}} \right) - \nonumber \\
+			&& \qquad \left. \sum_{m \neq k} \left( W_{jm}^2 \widehat{z_{im}} + \sum_{l \neq m} W_{jm} W_{jl} \widehat{z_{im}} \widehat{z_{il}} \right) \right) \\
+			&=& \frac{1}{2} \sum_j \beta_j \left( 2 x_{ij} W_{jk} - W_{jk}^2 - \right. \nonumber \\
+			&& \qquad \left. \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{il}} - \sum_{m \neq k} W_{jm} W_{jk} \widehat{z_{im}} \right) \\
+			&=& \frac{1}{2} \sum_j \beta_j \left( 2 x_{ij} W_{jk} - W_{jk}^2 - 2 \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{il}} \right) \\
+			&=& \sum_j \beta_j \left( x_{ij} W_{jk} - \frac{1}{2} W_{jk}^2 - \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{il}} \right) \\
+			&=& \sum_j x_{ij} \beta_j W_{jk} - \frac{1}{2} \sum_j W_{jk} \beta_j W_{jk} - \nonumber \\
+			&& \qquad \sum_j \beta_j \sum_{l \neq k} W_{jk} W_{jl} \widehat{z_{il}} \\
+			&=& \sum_j x_{ij} \beta_j W_{jk} - \frac{1}{2} \sum_j W_{jk} \beta_j W_{jk} - \nonumber \\
+			&& \qquad \sum_{l \neq k} \left( \sum_j W_{jl} \beta_j W_{jk} \right) \widehat{z_{il}} \\
+			&=& \bm{x}_i^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} - \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}}
+		\end{eqnarray}
+		
+		\item これより、$\mathcal{L}(q)$の$\widehat{z_{ik}}$による微分は次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \widehat{z_{ik}}} \mathcal{L}(q) \nonumber \\
+			&=& b_{ik} - \ln \widehat{z_{ik}} + \ln (1 - \widehat{z_{ik}}) + \nonumber \\
+			&& \qquad \bm{x}_i^T \bm{\beta} \bm{W}_{:k} - \frac{1}{2} \bm{W}_{:k}^T \bm{\beta} \bm{W}_{:k} - \sum_{l \neq k} \bm{W}_{:l}^T \bm{\beta} \bm{W}_{:k} \widehat{z_{il}}
+		\end{eqnarray}
 	\end{itemize}
 \end{itemize}
 

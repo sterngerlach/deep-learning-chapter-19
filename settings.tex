@@ -3,8 +3,11 @@
 
 \AtBeginDvi{\special{pdf:tounicode 90ms-RKSJ-UCS2}}
 
-\AtBeginSection[]{\frame{\frametitle{目次}
+\AtBeginSection[]{\frame[t]{\frametitle{目次}
 	\tableofcontents[currentsection, hideallsubsections]}}
+
+\AtBeginSubsection[]{\frame[t]{\frametitle{目次}
+	\tableofcontents[currentsection, currentsubsection]}}
 
 \usefonttheme{professionalfonts}
 \usetheme{Madrid}
@@ -32,6 +35,7 @@
 \DeclareMathOperator*{\argmin}{arg\,min}
 \DeclareMathOperator{\Tr}{Tr}
 \DeclareMathOperator{\KL}{KL}
+\DeclareMathOperator{\diag}{diag}
 
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
