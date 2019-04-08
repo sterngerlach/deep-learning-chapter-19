@@ -1615,7 +1615,7 @@
 		\item 事後分布$p(\bm{Z} | \bm{X})$が複雑になるので、最尤推定(EMアルゴリズム)が使えない
 		\item 代わりに、別の分布$q(\bm{Z})$を使って事後分布を近似することにした
 		\newline
-		\item エビデンス下界$\mathcal{L}(q)$を苦労して求めた
+		\item エビデンス下界$\mathcal{L}(q)$を\alert{苦労して求めた}
 		\item 更に、下界$\mathcal{L}(q)$を(各パラメータについて)最大化するための、不動点方程式を導出した
 		\newline
 		\item 不動点方程式を観察し、回帰結合型ニューラルネットワークや、自己符号化器との関係を考えた
@@ -1628,5 +1628,142 @@
 \end{itemize}
 
 \end{frame}
+
+\subsection{連続潜在変数の変分推論}
+
+\begin{frame}{連続潜在変数の変分推論}
+
+\begin{itemize}
+	\item 連続潜在変数をもつ変分推論の概要
+	\begin{itemize}
+		\item 平均場近似を行う場合は、以下の式によって最適な因子$q_j^*(\bm{Z}_j | \bm{X})$が得られる
+		\begin{eqnarray}
+			&& \ln q_j^*(\bm{Z}_j | \bm{X}) = \mathbb{E}_{i \neq j} \left[ \ln p(\bm{X}, \bm{Z}) \right] + \mathrm{Const.} \\
+			&& \mathbb{E}_{i \neq j} \left[ \ln p(\bm{X}, \bm{Z}) \right] = \int \ln p(\bm{X}, \bm{Z}) \prod_{i \neq j} q_i(\bm{Z}_i | \bm{X}) d\bm{Z}_i \\
+			&& q_j^*(\bm{Z}_j | \bm{X}) = \frac{\exp \left( \mathbb{E}_{i \neq j} \left[ \ln p(\bm{X}, \bm{Z}) \right] \right)}{\displaystyle \int \exp \left( \mathbb{E}_{i \neq j} \left[ \ln p(\bm{X}, \bm{Z}) \right] \right) d\bm{Z}_j}
+		\end{eqnarray}
+		
+		\item 上式は、下界$\mathcal{L}(q)$を最大化する$q$であり、従って連続潜在変数の場合の\alert{不動点方程式}とみなせる
+		\item 各因子$q_j(\bm{Z}_j | \bm{X})$を、上式を用いて順番に更新していく(\color{red}$i \neq j$である全ての$q_i$を固定\normalcolor した状態で、各$q_j$について下界を最適化する)
+		\item このステップを、下界$\mathcal{L}(q)$が収束するまで繰り返し行う(座標降下法)
+		\newline
+		
+		\item 不動点方程式は、下界が最適な値に\alert{収束するかどうかには関係なく}、\color{red}$q_j$の最適解が取る関数形を提供\normalcolor してくれる
+	\end{itemize} \
+	
+	\item 扱う確率モデルの表現
+	\begin{itemize}
+		\item ここでは次のような確率モデルを対象として、変分推論を扱う
+		\begin{eqnarray}
+			&& p(\bm{z}_i) = \mathcal{N}(\bm{z}_i | 0, \bm{I}) \\
+			&& p(x_i | \bm{z}_i) = \mathcal{N}(x_i | \bm{w}^T \bm{z}_i, 1)
+		\end{eqnarray}
+		
+		\item \alert{1次元}のデータ$x \in \mathbb{R}$に対して、\alert{2次元}の潜在変数$\bm{z} \in \mathbb{R}^2$が存在する
+		\item 同時分布$p(x_i, \bm{z}_i) = p(x_i | \bm{z}_i) p(\bm{z}_i)$を$\bm{z}_i$で積分消去すれば、$x_i$についての単なるガウス分布となる
+	\end{itemize} \
+	
+	\item 真の事後分布$p(\bm{z}_i | x_i)$の計算
+	\begin{itemize}
+		\item 正規化定数を無視して次のように計算できる
+		\begin{eqnarray}
+			&& p(\bm{z}_i | x_i) \nonumber \\
+			&\propto& p(\bm{z}_i | x_i) p(x_i) \nonumber \\
+			&=& p(x_i, \bm{z}_i) \nonumber \\
+			&=& p(\bm{z}_i) p(x_i | \bm{z}_i) \nonumber \\
+			&=& \mathcal{N}(\bm{z}_i | 0, \bm{I}) \mathcal{N}(x_i | \bm{w}^T \bm{z}_i, 1) \nonumber \\
+			&\propto& \exp \left( -\frac{1}{2} \bm{z}_i^T \bm{z}_i \right) \exp \left( -\frac{1}{2} \left( x_i - \bm{w}^T \bm{z}_i \right)^T \left( x_i - \bm{w}^T \bm{z}_i \right) \right) \nonumber \\
+			&=& \exp \left( -\frac{1}{2} \left( z_{i1}^2 + z_{i2}^2 \right) \right) \nonumber \\
+			&& \qquad \exp \left( -\frac{1}{2} \left( x_i - w_1 z_{i1} - w_2 z_{i2} \right)^T \left( x_i - w_1 z_{i1} - w_2 z_{i2} \right) \right) \nonumber \\
+			&=& \exp \left( -\frac{1}{2} \left( z_{i1}^2 + z_{i2}^2 + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 z_{i2}^2 - \right. \right. \nonumber \\
+			&& \qquad 2 x_i w_1 z_{i1} - 2 x_i w_2 z_{i2} + 2 w_1 w_2 z_{i1} z_{i2} \big) \bigg)
+		\end{eqnarray}
+		
+		\item 正規化項を$C$とすれば次のように書ける
+		\begin{eqnarray}
+			&& p(\bm{z}_i | x_i) \nonumber \\
+			&=& C \exp \left( -\frac{1}{2} \left( z_{i1}^2 + z_{i2}^2 + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 z_{i2}^2 - \right. \right. \nonumber \\
+			&& \qquad 2 x_i w_1 z_{i1} - 2 x_i w_2 z_{i2} + 2 w_1 w_2 z_{i1} z_{i2} \big) \bigg)
+		\end{eqnarray}
+		
+		\item $z_{i1}$と$z_{i2}$を乗算する項が存在する
+		\item 従って、真の事後分布は、\color{red}$z_{i1}$と$z_{i2}$のみの因子には分解できない\normalcolor ことが分かる
+	\end{itemize} \
+	
+	\item 平均場近似の計算
+	\begin{itemize}
+		\item 平均場近似を次のように表現する
+		\begin{equation}
+			q(\bm{z}_i | x_i) = q_1(z_{i1} | x_i) q_2(z_{i2} | x_i)
+		\end{equation}
+		
+		\item $q_2$を固定した状態で、最適な$q_1^*(z_{i1} | x_i)$を求める
+		\begin{eqnarray}
+			&& \ln q_1^*(z_{i1} | x_i) \nonumber \\
+			&=& \mathbb{E}_{z_{i2} \sim q_2(z_{i2} | x_i)} \left[ \ln p(\bm{z}_i, x_i) \right] + \mathrm{Const.} \\
+			&=& \mathbb{E}_{z_{i2}} \left[ \ln \left( C \exp \left( -\frac{1}{2} \left( z_{i1}^2 + z_{i2}^2 + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 z_{i2}^2 - \right. \right. \right. \right. \nonumber \\
+			&& \qquad 2 x_i w_1 z_{i1} - 2 x_i w_2 z_{i2} + 2 w_1 w_2 z_{i1} z_{i2} \big) \bigg) \bigg) \bigg] + \mathrm{Const.} \nonumber \\
+			&=& \mathbb{E}_{z_{i2}} \left[ -\frac{1}{2} \left( z_{i1}^2 + z_{i2}^2 + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 z_{i2}^2 - \right. \right. \nonumber \\
+			&& \qquad 2 x_i w_1 z_{i1} - 2 x_i w_2 z_{i2} + 2 w_1 w_2 z_{i1} z_{i2} \big) \bigg] + \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item $z_{i2} \sim q_2(z_{i2} | x_i)$による期待値を取っている
+		\item $q_2(z_{i2} | x_i)$から得る必要があるのは、結局$\mathbb{E}_{z_{i2}}[z_{i2}]$と、$\mathbb{E}_{z_{i2}}[z_{i2}^2]$の2つだけである
+		\item $\left< z_{i2} \right> = \mathbb{E}_{z_{i2}}[z_{i2}]$、$\left< z_{i2}^2 \right> = \mathbb{E}_{z_{i2}}[z_{i2}^2]$と書くことにする
+		\newline
+		
+		\item このとき次式が得られる
+		\begin{eqnarray}
+			&& \ln q_1^*(z_{i1} | x_i) \nonumber \\
+			&=& -\frac{1}{2} \left( z_{i1}^2 + \left< z_{i2}^2 \right> + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 \left< z_{i2}^2 \right> - \right. \nonumber \\
+			&& \qquad \left. 2 x_i w_1 z_{i1} - 2 x_i w_2 \left< z_{i2} \right> + 2 w_1 w_2 z_{i1} \left< z_{i2} \right> \right) + \nonumber \\
+			&& \qquad \mathrm{Const.}
+		\end{eqnarray}
+		
+		\item これより、最適な$q_1^*(z_{i1} | x_i)$は\alert{ガウス分布}の形であると分かる
+		\begin{eqnarray}
+			&& q_1^*(z_{i1} | x_i) \nonumber \\
+			&=& C \exp \left( -\frac{1}{2} \left( z_{i1}^2 + \left< z_{i2}^2 \right> + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 \left< z_{i2}^2 \right> - \right. \right. \nonumber \\
+			&& \qquad 2 x_i w_1 z_{i1} - 2 x_i w_2 \left< z_{i2} \right> + 2 w_1 w_2 z_{i1} \left< z_{i2} \right> \big) \bigg) \nonumber \\
+			&\propto& \exp \left( -\frac{1}{2} \left( z_{i1}^2 + \left< z_{i2}^2 \right> + x_i^2 + w_1^2 z_{i1}^2 + w_2^2 \left< z_{i2}^2 \right> - \right. \right. \nonumber \\
+			&& \qquad 2 x_i w_1 z_{i1} - 2 x_i w_2 \left< z_{i2} \right> + 2 w_1 w_2 z_{i1} \left< z_{i2} \right> \big) \bigg)
+		\end{eqnarray}
+		
+		\item 対称性から、最適な$q_2^*(z_{i2} | x_i)$も\alert{ガウス分布}であることが分かる
+		\newline
+		
+		\item ガウス分布同士の積もガウス分布になるので、結局$q(\bm{z}_i | x_i) = q_1(z_{i1} | x_i) q_2(z_{i2} | x_i)$はガウス分布である
+		\item $q(\bm{z}_i | x_i)$が2つの因子に分解できるとは仮定したが、\alert{各因子の関数形については全く仮定していない}ことに注意
+		\item ガウス分布は、下界$\mathcal{L}(q)$を$q$について変分最適化する過程で、\alert{自然に出現した}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{連続潜在変数の変分推論のまとめ}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item 連続潜在変数における変分推論の例として、簡単な確率モデルを扱った
+		\newline
+		\item 分布$q(\bm{Z} | \bm{X})$を、$\prod_i q_i(\bm{Z}_i | \bm{X})$のように因数分解できるという仮定(\alert{平均場近似})のみを置いた
+		\item 各因子$q_i(\bm{Z}_i | \bm{X})$の関数形については全く仮定を置かなかった
+		\newline
+		\item 変分推論によって、最適解となる$q_i$の関数形が自然に導出できた
+	\end{enumerate} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
+		\item 近似推論が、推論アルゴリズムの精度に影響することについて考える
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+% 下界とは何かという説明
+% エントロピーを最大化する分布がガウス分布であることの説明
+% 下界を2つに分解したときの、KL距離が正則化項であることの説明
+% Variational Auto Encoder (VAE)の説明
 
 \end{document}
