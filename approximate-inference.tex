@@ -1755,6 +1755,61 @@
 	
 	\item これからの話の流れ
 	\begin{itemize}
+		\item 変分推論と、正則化との関係をみてみよう
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{正則化との関わり}
+
+\begin{frame}{正則化との関わり}
+
+\begin{itemize}
+	\item 正則化との関係
+	\begin{itemize}
+		\item 変分下界$\mathcal{L}(q)$を次のように分解してみよう
+		\begin{eqnarray}
+			&& \mathcal{L}(q) \nonumber \\
+			&=& \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} d\bm{Z} \nonumber \\
+			&=& \int q(\bm{Z}) \ln \frac{p(\bm{X} | \bm{Z}) p(\bm{Z})}{q(\bm{Z})} d\bm{Z} \nonumber \\
+			&=& \int q(\bm{Z}) \left( \ln p(\bm{X} | \bm{Z}) + \ln \frac{p(\bm{Z})}{q(\bm{Z})} \right) d\bm{Z} \nonumber \\
+			&=& \int q(\bm{Z}) \ln p(\bm{X} | \bm{Z}) d\bm{Z} + \int q(\bm{Z}) \ln \frac{p(\bm{Z})}{q(\bm{Z})} d\bm{Z} \nonumber \\
+			&=& \int q(\bm{Z}) \ln p(\bm{X} | \bm{Z}) d\bm{Z} - \KL(q || p)
+		\end{eqnarray}
+		
+		\item 下界$\mathcal{L}(q)$を最大化するとき、第1項を\alert{最大化}し、第2項$\KL(q || p)$を\alert{最小化}する必要がある
+		\newline
+		
+		\item 第1項は、観測データの対数尤度$\ln p(\bm{X} | \bm{Z})$の、近似事後分布$q(\bm{Z})$についての期待値である
+		\item この項の最大化は、\alert{最尤推定}の考え方と似ている
+		\item $q(\bm{Z})$を、$\ln (\bm{X} | \bm{Z})$が最大となる$\bm{Z}^*$でのみ非零となる、デルタ関数$\delta(\bm{Z} - \bm{Z}^*)$とすれば、最大化できる
+		\newline
+		
+		\item 第2項は、近似事後分布$q(\bm{Z})$と、潜在変数に関する事前分布$p(\bm{Z})$とのKLダイバージェンス
+		\item これを小さくしようとすることは、近似分布$q(\bm{Z})$が事前分布$p(\bm{Z})$から、大きく離れることを防ぐことにあたる
+		\newline
+		
+		\item 第1項で、近似分布が際限なく尖ろうとすることに対して、第2項では、\color{red}予め定められた事前分布$p(\bm{Z})$を通じて、ペナルティを与える\normalcolor
+		\item 第2項は、MAP推定において、パラメータの事前分布$p(\bm{Z})$を導入することに相当する
+		\newline
+		\item これより、第2項は\alert{正則化項}として作用していることが分かる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{正則化との関わりのまとめ}
+
+\begin{itemize}
+	\item ここまでの話の流れ
+	\begin{enumerate}
+		\item 変分下界$\mathcal{L}(q)$の式を変形し、2つの項に分解した
+		\item 最尤推定に相当する項と、パラメータに関する事前分布の導入による\alert{正則化}に相当する項とに、分かれていることを確認した
+	\end{enumerate} \
+	
+	\item これからの話の流れ
+	\begin{itemize}
 		\item 教科書で触れられている雑多な話題を扱う
 		\newline
 		\item 近似推論が、推論アルゴリズムの精度に影響することについて考える
@@ -1764,7 +1819,7 @@
 
 \end{frame}
 
-\subsection{様々な話題}
+\subsection{雑多な話題}
 
 \begin{frame}{学習と推論の相互作用}
 
@@ -1780,24 +1835,28 @@
 		\item 下界$\mathcal{L}(q)$を次のように分解する
 		\begin{eqnarray}
 			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln p(\bm{X}, \bm{Z}) d\bm{Z} - \int q(\bm{Z}) \ln q(\bm{Z}) d\bm{Z} \\
-			&=& \int q(\bm{Z}) \left( \ln p(\bm{Z} | \bm{X}) + \ln p(\bm{X}) \right) d\bm{Z} + H[q] \\
-			&=& \int q(\bm{Z}) \ln p(\bm{Z} | \bm{X}) d\bm{Z} + \ln p(\bm{X}) + H[q] \\
-			&=& \mathbb{E}_{\bm{Z} \sim q(\bm{Z})} \left[ \ln p(\bm{Z} | \bm{X}) \right] + \ln p(\bm{X}) + H[q]
+			&=& \int q(\bm{Z}) \ln p(\bm{X}, \bm{Z}) d\bm{Z} + H[q] \\
+			&=& \mathbb{E}_{\bm{Z} \sim q(\bm{Z})} \left[ \ln p(\bm{X}, \bm{Z}) \right] + H[q] \\
+			&=& \mathbb{E}_{\bm{Z} \sim q(\bm{Z})} \left[ \ln p(\bm{X} | \bm{Z}) p(\bm{Z}) \right] + H[q]
 		\end{eqnarray}
 		
 		\item 分布に含まれるパラメータを明示的に記述する
-		\item $p(\bm{Z} | \bm{X}, \bm{\theta})$と、$p(\bm{Z} | \bm{\theta})$をモデリングする
-		\item このとき、$p(\bm{X}, \bm{Z} | \bm{\theta}) = p(\bm{Z} | \bm{X}, \bm{\theta}) p(\bm{X} | \bm{\theta})$と書ける
+		\item このとき、モデリングされる関数は$p(\bm{X} | \bm{Z}, \bm{\theta})$、$p(\bm{Z} | \bm{\theta})$と表せるので、$p(\bm{X} | \bm{Z}) = p(\bm{X}, \bm{Z} | \bm{\theta}) = p(\bm{X} | \bm{Z}, \bm{\theta}) p(\bm{Z} | \bm{\theta})$と書ける
 		\item 従って、下界$\mathcal{L}(q)$は次のようになる
 		\begin{equation}
-			\mathcal{L}(q, \bm{\theta}) = \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right] + \ln p(\bm{X} | \bm{\theta}) + H[q]
+			\mathcal{L}(q, \bm{\theta}) = \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] + H[q]
 		\end{equation}
 		
 		\item 下界$\mathcal{L}(q, \bm{\theta})$を\color{red}パラメータ$\bm{\theta}$について\normalcolor 増加させるとする
-		\item これは、$\mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right]$を、\color{red}$q$を固定しつつ\normalcolor 、$\bm{\theta}$について増加させることに繋がる
+		\item これは、$\mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] = \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right] + \mathrm{Const.}$を、\color{red}$q$を固定しつつ\normalcolor 、$\bm{\theta}$について増加させることに繋がる
 		\newline
 		\item このとき、$q(\bm{Z})$が高い確率となる$\bm{Z}$について$p(\bm{Z} | \bm{X}, \bm{\theta})$が増大し、$q(\bm{Z})$が低い確率となる$\bm{Z}$について$p(\bm{Z} | \bm{X}, \bm{\theta})$が減少する
-		\newline
+		\begin{eqnarray}
+			\mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{X}, \bm{Z} | \bm{\theta}) \right] &=& \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) p(\bm{X}) \right] \nonumber \\
+			&=& \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right] + \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{X}) \right] \nonumber \\
+			&=& \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right] + \ln p(\bm{X}) \nonumber \\
+			&=& \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right] + \mathrm{Const.}
+		\end{eqnarray}
 		
 		\item これより、近似仮定が\alert{自己充足的予言}となることが分かる
 		\item 自己充足的予言とは、ある事象や状況に関する判断や思い込みが原因となり、その結果として、その判断や思い込みが現実化することである
@@ -1849,7 +1908,7 @@
 	\item Wake-Sleepアルゴリズム
 	\begin{itemize}
 		\item データ$\bm{X}$から潜在変数$\bm{Z}$を推論するときの困難は、正しい潜在変数$\bm{Z}$が分からず、従って\alert{教師あり訓練集合}が得られないことである
-		\item データ$\bm{X}$から潜在変数$\bm{Z}$への写像は、モデル($p(\bm{X} | \bm{Z} | \bm{\theta}), p(\bm{Z} | \bm{\theta})$の選択に依存し、更に$\bm{\theta}$の変化に伴って変わり続ける
+		\item データ$\bm{X}$から潜在変数$\bm{Z}$への写像は、モデル($p(\bm{X} | \bm{Z}, \bm{\theta}), p(\bm{Z} | \bm{\theta})$の選択)に依存し、更に$\bm{\theta}$の変化に伴って変わり続ける
 		\newline
 		
 		\item Wake-Sleepアルゴリズムでは、$\bm{X}$と$\bm{Z}$の両方のサンプルを、モデル分布から抽出する
@@ -1869,9 +1928,7 @@
 
 \end{frame}
 
-% 下界とは何かという説明
 % エントロピーを最大化する分布がガウス分布であることの説明
-% 下界を2つに分解したときの、KL距離が正則化項であることの説明
 % Variational Auto Encoder (VAE)の説明
 
 \end{document}
