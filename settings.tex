@@ -7,7 +7,8 @@
 	\tableofcontents[currentsection,hideallsubsections]}}
 
 \AtBeginSubsection[]{\frame[t]{\frametitle{目次}
-	\tableofcontents[currentsection,currentsubsection,subsectionstyle=show/shaded/hide]}}
+	\tableofcontents[currentsection,sectionstyle=show/hide,
+	currentsubsection,subsectionstyle=show/shaded/hide]}}
 
 \usefonttheme{professionalfonts}
 \usetheme{Madrid}
@@ -20,7 +21,7 @@
 \setbeamertemplate{caption}[numbered]
 
 \let\oldframe\frame
-\renewcommand\frame[1][allowdisplaybreaks,allowframebreaks,t]{\oldframe[#1]}
+\renewcommand\frame[1][t,allowdisplaybreaks,allowframebreaks]{\oldframe[#1]}
 
 \usepackage{bxdpx-beamer}
 \usepackage{pxjahyper}

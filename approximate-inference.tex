@@ -1755,7 +1755,115 @@
 	
 	\item これからの話の流れ
 	\begin{itemize}
+		\item 教科書で触れられている雑多な話題を扱う
+		\newline
 		\item 近似推論が、推論アルゴリズムの精度に影響することについて考える
+		\item 学習による近似推論の手法を考える
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{様々な話題}
+
+\begin{frame}{学習と推論の相互作用}
+
+\begin{itemize}
+	\item 近似推論が精度に与える影響
+	\begin{itemize}
+		\item 近似推論では、以下の下界$\mathcal{L}(q)$を$q$について最適化する
+		\begin{eqnarray}
+			&& \ln p(\bm{X}) = \mathcal{L}(q) + \KL(q || p) \\
+			&& \mathcal{L}(q) = \int q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z})}{q(\bm{Z})} d\bm{Z}
+		\end{eqnarray}
+		
+		\item 下界$\mathcal{L}(q)$を次のように分解する
+		\begin{eqnarray}
+			\mathcal{L}(q) &=& \int q(\bm{Z}) \ln p(\bm{X}, \bm{Z}) d\bm{Z} - \int q(\bm{Z}) \ln q(\bm{Z}) d\bm{Z} \\
+			&=& \int q(\bm{Z}) \left( \ln p(\bm{Z} | \bm{X}) + \ln p(\bm{X}) \right) d\bm{Z} + H[q] \\
+			&=& \int q(\bm{Z}) \ln p(\bm{Z} | \bm{X}) d\bm{Z} + \ln p(\bm{X}) + H[q] \\
+			&=& \mathbb{E}_{\bm{Z} \sim q(\bm{Z})} \left[ \ln p(\bm{Z} | \bm{X}) \right] + \ln p(\bm{X}) + H[q]
+		\end{eqnarray}
+		
+		\item 分布に含まれるパラメータを明示的に記述する
+		\item $p(\bm{Z} | \bm{X}, \bm{\theta})$と、$p(\bm{Z} | \bm{\theta})$をモデリングする
+		\item このとき、$p(\bm{X}, \bm{Z} | \bm{\theta}) = p(\bm{Z} | \bm{X}, \bm{\theta}) p(\bm{X} | \bm{\theta})$と書ける
+		\item 従って、下界$\mathcal{L}(q)$は次のようになる
+		\begin{equation}
+			\mathcal{L}(q, \bm{\theta}) = \mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right] + \ln p(\bm{X} | \bm{\theta}) + H[q]
+		\end{equation}
+		
+		\item 下界$\mathcal{L}(q, \bm{\theta})$を\color{red}パラメータ$\bm{\theta}$について\normalcolor 増加させるとする
+		\item これは、$\mathbb{E}_{\bm{Z}} \left[ \ln p(\bm{Z} | \bm{X}, \bm{\theta}) \right]$を、\color{red}$q$を固定しつつ\normalcolor 、$\bm{\theta}$について増加させることに繋がる
+		\newline
+		\item このとき、$q(\bm{Z})$が高い確率となる$\bm{Z}$について$p(\bm{Z} | \bm{X}, \bm{\theta})$が増大し、$q(\bm{Z})$が低い確率となる$\bm{Z}$について$p(\bm{Z} | \bm{X}, \bm{\theta})$が減少する
+		\newline
+		
+		\item これより、近似仮定が\alert{自己充足的予言}となることが分かる
+		\item 自己充足的予言とは、ある事象や状況に関する判断や思い込みが原因となり、その結果として、その判断や思い込みが現実化することである
+		\newline
+		
+		\item 即ち、予め近似事後分布$q(\bm{Z})$に何らかの仮定を置いて訓練することで、\color{red}結果としてその仮定に沿うような\normalcolor 分布が得られてしまう
+		\newline
+		
+		\item 単峰性の近似事後分布$q(\bm{Z})$を使って訓練することを考える
+		\item 得られる事後分布$q(\bm{Z}) = p(\bm{Z} | \bm{X})$は、厳密な推論によって得られた$p(\bm{Z} | \bm{X})$と比べて、単峰性がはるかに強くなっている
+		\item 事後分布が多峰性であるという仮定が、\color{red}推定結果にも現れてしまう\normalcolor
+	\end{itemize} \
+	
+	\item 変分推論によってモデルに課される損害
+	\begin{itemize}
+		\item モデルを訓練した後に、$\ln p(\bm{X} | \bm{\theta})$を推定し、下界$\mathcal{L}(q, \bm{\theta})$との\alert{差が十分に小さい}($\mathcal{L}(q, \bm{\theta}) \simeq \ln p(\bm{X} | \bm{\theta})$)ことを確認する
+		\item このとき、\color{red}ある特定のパラメータ$\bm{\theta}$について\normalcolor 、変分近似が正確であるといえる
+		\newline
+		
+		\item 但し、\alert{一般的に}変分近似が正確であるとは\alert{いえない}
+		\item また、変分推論が、学習過程に殆ど害を及ぼさないとも結論付けては\alert{いけない}
+		\newline
+		
+		\item 変分近似による\alert{真の損害}は、$\ln p(\bm{X} | \bm{\theta})$を最大にする$\bm{\theta}^*$が分からなければ、測定することができない
+		\newline
+		
+		\item ある$\bm{\theta}$について$\mathcal{L}(q, \bm{\theta}) \simeq \ln p(\bm{X} | \bm{\theta})$が成立しても、$\mathcal{L}(q, \bm{\theta}) \simeq \ln p(\bm{X} | \bm{\theta}) \ll \ln p(\bm{X} | \bm{\theta}^*)$であるかもしれない
+		\item あるパラメータ$\bm{\theta}$については変分近似は正確だが、実際には近似が全く上手く行っていないことになる
+		\newline
+		
+		\item また$\max_q \mathcal{L}(q, \bm{\theta}^*) \ll \ln p(\bm{X} | \bm{\theta}^*)$であれば、$\bm{\theta}^*$のときの事後分布は、制限された$q$にとって複雑すぎるため、訓練では$\bm{\theta}^*$を見つけることができない
+		\item この問題は、変分推論とは別の方法で$\bm{\theta}^*$が求まる場合にしか、検知することができない
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{学習による近似推論}
+
+\begin{itemize}
+	\item 近似推論の実行の学習
+	\begin{itemize}
+		\item 不動点方程式や勾配に基づく最適化を、繰り返し行う近似推論は、計算コストが非常に高い
+		\newline
+		\item 近似推論による最適化処理は、入力$\bm{X}$から、近似事後分布$q^*(\bm{Z}) = \argmax_q \mathcal{L}(\bm{X}, q)$へと写像する関数$f$とみなせる
+		\item これにより、反復的な最適化処理を単なる関数とみなして、関数$\widehat{f}(\bm{X}, \bm{\theta})$を、ニューラルネットワークで近似することができる
+	\end{itemize} \
+	
+	\item Wake-Sleepアルゴリズム
+	\begin{itemize}
+		\item データ$\bm{X}$から潜在変数$\bm{Z}$を推論するときの困難は、正しい潜在変数$\bm{Z}$が分からず、従って\alert{教師あり訓練集合}が得られないことである
+		\item データ$\bm{X}$から潜在変数$\bm{Z}$への写像は、モデル($p(\bm{X} | \bm{Z} | \bm{\theta}), p(\bm{Z} | \bm{\theta})$の選択に依存し、更に$\bm{\theta}$の変化に伴って変わり続ける
+		\newline
+		
+		\item Wake-Sleepアルゴリズムでは、$\bm{X}$と$\bm{Z}$の両方のサンプルを、モデル分布から抽出する
+		\item モデルの分布が高い確率を示すような$\bm{X}$に対してしか、推論ネットワークを学習できない
+		\newline
+		\item モデルの分布が、データの分布に似ていないとき、推論ネットワークはデータに似たサンプルを学習できない
+	\end{itemize} \
+	
+	\item 推論学習の他の形式
+	\begin{itemize}
+		\item \alert{変分自己符号化器}は、生成モデリングで主要なアプローチとなった
+		\newline
+		\item 推論ネットワークは、単に下界$\mathcal{L}(q)$を定義するために使用される
+		\item ネットワークのパラメータは、下界$\mathcal{L}(q)$が増加するように適用される
 	\end{itemize}
 \end{itemize}
 
