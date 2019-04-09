@@ -854,7 +854,7 @@
 		
 		\item $\mathcal{L}(q, \bm{\theta})$は、$q(\bm{Z}), \bm{\theta}$によらず、常に$\ln p(\bm{X} | \bm{\theta})$の\alert{下界}をなす
 		\newline
-		\item EMアルゴリズムの各ステップについて見ていく
+		\item 下界について確認した後に、EMアルゴリズムの各ステップについて見ていく
 	\end{itemize}
 \end{itemize}
 
@@ -867,6 +867,30 @@
 	\includegraphics[clip,scale=0.75,trim=2cm 16.5cm 1cm 2cm,page=471]{../pattern-recognition-and-machine-learning.pdf}
 	\caption{$\ln p(\bm{X} | \bm{\theta})$の分解}
 \end{figure}
+
+\end{frame}
+
+\begin{frame}{下界と上界の定義}
+
+\begin{itemize}
+	\item 下界と上界の定義
+	\begin{itemize}
+		\item \alert{下界}と\alert{上界}は、次のように定義される(実数の集合を$\mathbb{R}$とする)
+		\begin{eqnarray}
+			&& \text{実数$a \in \mathbb{R}$が、実数の部分集合$A \subset \mathbb{R}$の上界である} \nonumber \\
+			&& \qquad \Leftrightarrow \text{集合$A$に属する任意の要素$x$は、$a$以下である} \nonumber \\
+			&& \qquad \Leftrightarrow \forall x \in A, x \le a
+		\end{eqnarray}
+		\begin{eqnarray}
+			&& \text{実数$a \in \mathbb{R}$が、実数の部分集合$A \subset \mathbb{R}$の下界である} \nonumber \\
+			&& \qquad \Leftrightarrow \text{集合$A$に属する任意の要素$x$は、$a$以上である} \nonumber \\
+			&& \qquad \Leftrightarrow \forall x \in A, a \le x
+		\end{eqnarray}
+		
+		\item 上記の定義は、実数の集合$\mathbb{R}$だけでなく、一般の半順序集合について成り立つ
+		\item 例えば、集合$A$を$A = \left\{ x | 0 \le x \right\}$と定義すると、$0$以下である実数、例えば$-1$、$-3$などは、いずれも集合$A$の下界となる
+	\end{itemize}
+\end{itemize}
 
 \end{frame}
 
