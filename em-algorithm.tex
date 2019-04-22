@@ -23,7 +23,7 @@
 		\newline
 		\item \alert{潜在変数}を導入して再度定式化を行い、混合ガウス分布に対する\alert{EMアルゴリズム}を自然に導出した
 		\newline
-		\item EMアルゴリズムの中で、潜在変数は、\alert{負担率}(事後分布)の形で登場しただけであった ($\gamma(z_{ik}) = p(z_k = 1 | \bm{x})$)
+		\item EMアルゴリズムの中で、潜在変数は、\alert{負担率}(事後分布)の形で登場しただけであった ($\gamma(z_{ik}) = p(z_k = 1 | \bm{x}_i)$)
 	\end{enumerate} \
 	
 	\item これからの話の流れ
@@ -66,7 +66,7 @@
 	\item 何が問題だったか
 	\begin{itemize}
 		\item \alert{対数の中に、潜在変数に関する総和が含まれる}(\alert{log-sum}の形)
-		\item 総和が存在するので、対数$\ln$が、周辺分布$p(\bm{X}, \bm{Z} | \bm{\theta})$に直接作用することが妨げられる
+		\item 総和が存在するので、対数$\ln$が、周辺分布$p(\bm{X} | \bm{\theta})$に直接作用することが妨げられる
 		\item その結果として、対数尤度関数が複雑な形となる
 	\end{itemize} \
 	
@@ -1121,7 +1121,7 @@
 			&=& \mathcal{L}(q, \bm{\theta})
 		\end{eqnarray}
 		
-		\item 不等式の部分でイェンセンの不等式$\log (\mathbb{E}[x]) \le \mathbb{E}[\log x]$を用いた
+		\item 不等式の部分でイェンセンの不等式$\ln (\mathbb{E}[x]) \le \mathbb{E}[\ln x]$を用いた
 		\item これより、$\ln p(\bm{X} | \bm{\theta})$と$\mathcal{L}(q, \bm{\theta})$の差を調べると
 		\begin{eqnarray}
 			&& \ln p(\bm{X} | \bm{\theta}) - \mathcal{L}(q, \bm{\theta}) \nonumber \\
