@@ -1015,17 +1015,17 @@
 	\item Mステップで最大化される量
 	\begin{itemize}
 		\item Mステップでは下界$\mathcal{L}(q, \bm{\theta})$を、$q$を固定しつつ$\bm{\theta}$について最大化する
-		\item Mステップで最大化するのは、\alert{Eステップ後の下界}$\mathcal{L}(q, \bm{\theta})$であり、これは次のように表せる ($q(\bm{Z}) = p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})$である)
+		\item Mステップで最大化するのは、\alert{Eステップ後の下界}$\mathcal{L}(q, \bm{\theta})$であり、これは次のように表せる ($q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$である)
 		\begin{eqnarray}
 			&& \mathcal{L}(q, \bm{\theta}) \nonumber \\
 			&=& \sum_{\bm{Z}} q(\bm{Z}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{q(\bm{Z})} \nonumber \\
-			&=& \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})} \\
-			&=& \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}) - \nonumber \\
-			&& \qquad \sum_{\bm{Z}} p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old}) \\
+			&=& \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln \frac{p(\bm{X}, \bm{Z} | \bm{\theta})}{p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})} \\
+			&=& \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{X}, \bm{Z} | \bm{\theta}) - \nonumber \\
+			&& \qquad \sum_{\bm{Z}} p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \ln p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old}) \\
 			&=& \mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old}) + \mathrm{Const.}
 		\end{eqnarray}
 		
-		\item 定数項は、単に分布$q(\bm{Z}) = p(\bm{X}, \bm{Z} | \bm{\theta}^\mathrm{old})$のエントロピーであって、$\bm{\theta}$には依存しないため無視できる
+		\item 定数項は、単に分布$q(\bm{Z}) = p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$のエントロピーであって、$\bm{\theta}$には依存しないため無視できる
 		\newline
 		\item Mステップで最大化される量は、結局、完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{\theta})$の、事後確率分布$p(\bm{Z} | \bm{X}, \bm{\theta}^\mathrm{old})$による期待値\color{red}$\mathcal{Q}(\bm{\theta}, \bm{\theta}^\mathrm{old})$\normalcolor である
 		\newline
