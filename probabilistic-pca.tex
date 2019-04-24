@@ -1,0 +1,420 @@
+
+% probabilistic-pca.tex
+
+\documentclass[dvipdfmx,notheorems,t]{beamer}
+
+\usepackage{docmute}
+\input{settings}
+
+\begin{document}
+
+\section{EMアルゴリズムの例}
+
+\subsection{確率的主成分分析(PPCA)}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item 主成分分析の確率モデルによる表現
+	\begin{itemize}
+		\item 主成分分析は、潜在変数を含む確率モデルの、最尤推定として導出できることを示す
+		\item このような主成分分析の再定式化を\alert{確率的主成分分析}という
+		\newline
+		
+		\item そして、主成分分析を行うための\alert{EMアルゴリズム}を導出してみる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item 主成分分析の確率モデルによる表現
+	\begin{itemize}
+		\item 主成分分析では、$D$個の変数$\left\{ x_1, x_2, \ldots, x_D \right\}$を線形に組み合わせて、\alert{真にアクティブな$M$個の変数}を見いだす
+		\newline
+		
+		\item 主部分空間に存在する潜在変数を、$M$次元のベクトル$\bm{z}$として明示的に表現する
+		\item $D$次元のデータ$\bm{x}$は、主部分空間内の$M$次元のベクトル$\bm{z}$から、以下のように、ガウス分布から\alert{確率的に}生成されたと考える
+		\begin{equation}
+			p(\bm{x} | \bm{z}) = \mathcal{N}(\bm{x} | \bm{W} \bm{z} + \bm{\mu}, \sigma^2 \bm{I})
+		\end{equation}
+		
+		\item $D \times M$行列$\bm{W}$の列ベクトルが張る空間(線形部分空間)は、データ空間における\alert{主部分空間に対応}する
+		\item $D$次ベクトル$\bm{\mu}$は、観測変数$\bm{x}$の平均である
+		\newline
+		
+		\item 潜在変数$\bm{z}$に関する事前分布$p(\bm{z})$も、平均$0$で共分散行列が単位行列$\bm{I}$のガウス分布とする
+		\begin{equation}
+			p(\bm{z}) = \mathcal{N}(\bm{z} | \bm{0}, \bm{I})
+		\end{equation}
+		
+		\item 事前分布$p(\bm{z})$の平均が$0$、共分散行列が$\bm{I}$でも、一般性は失われていない
+		\item 事前分布$p(\bm{z})$として、より一般的なガウス分布を仮定しても、得られる確率モデルは結果的に等価になる
+		\newline
+		
+		\item \alert{生成モデル}の観点から、確率的主成分分析モデルを考えることができる
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item 生成モデルの観点
+	\begin{itemize}
+		\item 生成モデルとは、実際に観測されるデータ$\bm{x}$が、\alert{どのように生成されるか}という過程を、確率分布などを使ってモデル化したものである
+		\item ここでは、潜在変数$\bm{z}$を含んだ生成モデルを考えている
+	\end{itemize} \
+	
+	\item データの生成過程
+	\begin{enumerate}
+		\item 潜在変数$\bm{z}_i$を、事前分布$p(\bm{z})$からサンプリングする
+		\item $\bm{z}_i$を使って、条件付き分布$p(\bm{x} | \bm{z})$からデータ$\bm{x}_i$をサンプリングする
+	\end{enumerate} \
+	
+	\item データの生成過程に関する注意点
+	\begin{itemize}
+		\item $D$次元の観測変数$\bm{x}_i$は、$M$次元の潜在変数$\bm{z}_i$に\alert{線形変換}を施したあと($\bm{x}_i = \bm{W} \bm{z}_i + \bm{\mu}$)、ガウス分布による\alert{ノイズ}($\bm{\epsilon}_i \sim \mathcal{N}(\bm{\epsilon} | 0, \sigma^2 \bm{I})$)が加えられたものとして定義される($\bm{x}_i = \bm{W} \bm{z}_i + \bm{\mu}_i + \bm{\epsilon}_i$)
+		\newline
+		
+		\item 観測変数$\bm{x}_i$の裏側には、潜在変数$\bm{z}_i$が潜んでいる
+		\item 潜在変数$\bm{z}_i$は実際に観測できないが、$\bm{x}_i$の本質的な情報を表している
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item パラメータ$\bm{W}, \bm{\mu}, \sigma^2$の最尤推定
+	\begin{itemize}
+		\item 観測変数$\bm{x}_i$の裏側には、潜在変数$\bm{z}_i$が対応している
+		\item パラメータ$\bm{W}, \bm{\mu}, \sigma^2$を通じて、$\bm{z}_i$から観測可能な$\bm{x}_i$が生成される
+		\newline
+		
+		\item パラメータの最尤推定を行うために、尤度関数$p(\bm{x} | \bm{W}, \bm{\mu}, \sigma^2)$を求める
+		\newline
+		
+		\item $p(\bm{x} | \bm{W}, \bm{\mu}, \sigma^2)$は、$\bm{x}$と$\bm{z}$に関する同時分布$p(\bm{x}, \bm{z} | \bm{W}, \bm{\mu}, \sigma^2)$の、$\bm{z}$に関する周辺化によって得られる
+		\begin{equation}
+			p(\bm{x} | \bm{W}, \bm{\mu}, \sigma^2) = \int p(\bm{x} | \bm{z}, \bm{W}, \bm{\mu}, \sigma^2) p(\bm{z}) d\bm{z}
+		\end{equation}
+		
+		\item $p(\bm{x} | \bm{z}, \bm{W}, \bm{\mu}, \sigma^2)$と$p(\bm{z})$は、いずれもガウス分布であったので、ガウス分布に関する公式から$p(\bm{x} | \bm{W}, \bm{\mu}, \sigma^2)$は次のようになる
+		\begin{equation}
+			p(\bm{x} | \bm{W}, \bm{\mu}, \sigma^2) = \mathcal{N}(\bm{x} | \bm{\mu}, \bm{C})
+		\end{equation}
+		
+		\item 行列$\bm{C}$は次のように定義される
+		\begin{equation}
+			\bm{C} = \bm{W} \bm{W}^T + \sigma^2 \bm{I}
+		\end{equation}
+		
+		\item 更に、潜在変数$\bm{z}$に関する事後分布$p(\bm{z} | \bm{x})$も計算できる
+		\begin{equation}
+			p(\bm{z} | \bm{x}, \bm{W}, \bm{\mu}, \sigma^2) = \mathcal{N}(\bm{z} | \bm{M}^{-1} \bm{W}^T (\bm{x} - \bm{\mu}), \sigma^2 \bm{M}^{-1})
+		\end{equation}
+		
+		\item 行列$\bm{M}$は次のように定義される
+		\begin{equation}
+			\bm{M} = \bm{W}^T \bm{W} + \sigma^2 \bm{I}
+		\end{equation}
+		
+		\item これらの式は、ガウス分布に関する次の公式を用いれば導出できる
+		\begin{eqnarray}
+			p(\bm{y} | \bm{x}) &=& \mathcal{N}(\bm{y} | \bm{A} \bm{x} + \bm{b}, \bm{D}) \\
+			p(\bm{x}) &=& \mathcal{N}(\bm{x} | \bm{\mu}, \bm{\Sigma})
+		\end{eqnarray}
+		
+		\item $p(\bm{y} | \bm{x})$と$p(\bm{x})$が上式のようなガウス分布であるとき、$p(\bm{x} | \bm{y})$と$p(\bm{y})$は次のようになる
+		\begin{eqnarray}
+			p(\bm{x} | \bm{y}) &=& \mathcal{N} \left( \bm{x} | \bm{M} \left( \bm{A}^T \bm{D}^{-1} (\bm{y} - \bm{b}) + \bm{\Sigma}^{-1} \bm{\mu} \right), \bm{M} \right) \\
+			p(\bm{y}) &=& \mathcal{N}(\bm{y} | \bm{A} \bm{\mu} + \bm{b}, \bm{D} + \bm{A} \bm{\Sigma} \bm{A}^T) \\
+			\bm{M} &=& \left( \bm{A}^T \bm{D}^{-1} \bm{A} + \bm{\Sigma}^{-1} \right)^{-1}
+		\end{eqnarray}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item パラメータ$\bm{\mu}$に関する最尤推定
+	\begin{itemize}
+		\item $N$個の観測データ$\left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$と、それに対応する潜在変数$\left\{ \bm{z}_1, \ldots, \bm{z}_N \right\}$を考える
+		\item ここでの目標は、データ$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$から、パラメータ$\bm{W}, \bm{\mu}, \sigma^2$を最尤推定することである
+		\newline
+		
+		\item $N$個のデータをまとめた行列を$\bm{X}$とする(第$i$行ベクトルは$\bm{x}_i^T$)
+		\item $N$個の潜在変数をまとめた行列を$\bm{Z}$とする(第$i$行ベクトルは$\bm{z}_i^T$)
+		\newline
+		
+		\item 各データと潜在変数$\bm{x}_i, \bm{z}_i$は、分布$p(\bm{x} | \bm{z}), p(\bm{z})$から独立にサンプリングされるとする(データは\alert{i.i.d標本}であるとする)
+		\newline
+		
+		\item 対数尤度関数$\ln p(\bm{X} | \bm{W}, \bm{\mu}, \sigma^2)$は次のように書ける
+		\begin{eqnarray}
+			&& \ln p(\bm{X} | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \ln \prod_i p(\bm{x}_i | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \sum_i \ln p(\bm{x}_i | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \sum_i \ln \mathcal{N}(\bm{x}_i | \bm{\mu}, \bm{C}) \nonumber \\
+			&=& \sum_i \ln \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\bm{C}|^\frac{1}{2}} \exp \left( -\frac{1}{2} \left( \bm{x}_i - \bm{\mu} \right)^T \bm{C}^{-1} \left( \bm{x}_i - \bm{\mu} \right) \right) \nonumber \\
+			&=& \sum_i \left( -\frac{D}{2} \ln 2\pi - \frac{1}{2} \ln |\bm{C}| - \frac{1}{2} \left( \bm{x}_i - \bm{\mu} \right)^T \bm{C}^{-1} \left( \bm{x}_i - \bm{\mu} \right) \right) \nonumber \\
+			&=& -\frac{ND}{2} \ln 2\pi - \frac{N}{2} \ln |\bm{C}| - \frac{1}{2} \sum_i \left( \bm{x}_i - \bm{\mu} \right)^T \bm{C}^{-1} \left( \bm{x}_i - \bm{\mu} \right) \nonumber
+		\end{eqnarray}
+		
+		\item 対数尤度を$\bm{\mu}$で偏微分し、$0$と等置することによって、$\bm{\mu}$の最尤解が得られる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{\mu}} \ln p(\bm{X} | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& -\frac{1}{2} \frac{\partial}{\partial \bm{\mu}} \sum_i \left( \bm{x}_i - \bm{\mu} \right)^T \bm{C}^{-1} \left( \bm{x}_i - \bm{\mu} \right) \nonumber \\
+			&=& -\frac{1}{2} \sum_i \left( -2 \bm{C}^{-1} \right) \left( \bm{x}_i - \bm{\mu} \right) \nonumber \\
+			&=& \bm{C}^{-1} \sum_i \left( \bm{x}_i - \bm{\mu} \right) \nonumber \\
+			&=& 0 \nonumber
+		\end{eqnarray}
+		これより$\bm{\mu}$の最尤解は以下のようになる
+		\begin{equation}
+			\bm{\mu} = \frac{1}{N} \sum_i \bm{x}_i
+		\end{equation}
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item パラメータ$\bm{W}, \sigma^2$に関する最尤推定
+	\begin{itemize}
+		\item 対数尤度を$\bm{W}, \sigma^2$について微分することは形式上は可能である
+		\item 但し、$\bm{W}, \sigma^2$が行列$\bm{C}$の中に入れ子になっている
+		\item 従って、$\bm{W}, \sigma^2$の厳密な閉形式の解を得ることは、複雑かつ困難である
+		\newline
+		
+		\item そこで、パラメータ$\bm{W}, \sigma^2$を求めるための\alert{EMアルゴリズム}を導出したい
+		\newline
+		
+		\item EMアルゴリズムは、潜在変数を含む確率モデルについて、パラメータの最尤推定を行うための一般的な枠組みを提供する
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\begin{frame}{確率的主成分分析(PPCA)}
+
+\begin{itemize}
+	\item EMアルゴリズムによる主成分分析の導出
+	\begin{itemize}
+		\item 完全データ対数尤度関数$\ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2)$は次のようになる
+		\begin{eqnarray}
+			&& \ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \ln \prod_i p(\bm{x}_i, \bm{z}_i | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \sum_i \ln p(\bm{x}_i, \bm{z}_i | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \sum_i \ln p(\bm{x}_i | \bm{z}_i, \bm{W}, \bm{\mu}, \sigma^2) p(\bm{z}_i) \nonumber \\
+			&=& \sum_i \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i + \bm{\mu}, \sigma^2 \bm{I}) \mathcal{N}(\bm{z}_i | \bm{0}, \bm{I}) \nonumber \\
+			&=& \sum_i \left( \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i + \bm{\mu}, \sigma^2 \bm{I}) + \ln \mathcal{N}(\bm{z}_i | \bm{0}, \bm{I}) \right)
+		\end{eqnarray}
+		第1項$\ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i + \bm{\mu}, \sigma^2 \bm{I})$は次のようになる
+		\begin{eqnarray}
+			&& \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i + \bm{\mu}, \sigma^2 \bm{I}) \nonumber \\
+			&=& \ln \left( \frac{1}{(2\pi)^\frac{D}{2}} \frac{1}{|\sigma^2 \bm{I}|^\frac{1}{2}} \right. \nonumber \\
+			&& \qquad \left. \exp \left( -\frac{1}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i - \bm{\mu} \right)^T \left( \sigma^2 \bm{I} \right)^{-1} \left( \bm{x}_i - \bm{W} \bm{z}_i - \bm{\mu} \right) \right) \right) \nonumber \\
+			&=& -\frac{D}{2} \ln 2\pi - \frac{1}{2} \ln |\sigma^2 \bm{I}| - \nonumber \\
+			&& \qquad \frac{1}{2} \left( \bm{x}_i - \bm{W} \bm{z}_i - \bm{\mu} \right)^T \left( \sigma^2 \bm{I} \right)^{-1} \left( \bm{x}_i - \bm{W} \bm{z}_i - \bm{\mu} \right) \nonumber \\
+			&=& -\frac{D}{2} \ln 2\pi - \frac{D}{2} \ln \sigma^2 - \nonumber \\
+			&& \qquad \frac{1}{2 \sigma^2} \left( \bm{x}_i - \bm{W} \bm{z}_i - \bm{\mu} \right)^T \left( \bm{x}_i - \bm{W} \bm{z}_i - \bm{\mu} \right) \nonumber \\
+			&=& -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} \left( \bm{x}_i - \bm{\mu} \right)^T \left( \bm{x}_i - \bm{\mu} \right) + \nonumber \\
+			&& \qquad \frac{1}{\sigma^2} \left( \bm{W} \bm{z}_i \right)^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \left( \bm{W} \bm{z}_i \right)^T \left( \bm{W} \bm{z}_i \right) \nonumber \\
+			&=& -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} \left( \bm{x}_i - \bm{\mu} \right)^T \left( \bm{x}_i - \bm{\mu} \right) + \nonumber \\
+			&& \qquad \frac{1}{\sigma^2} \bm{z}_i^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \bm{z}_i^T \bm{W}^T \bm{W} \bm{z}_i \nonumber \\
+			&=& -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} || \bm{x}_i - \bm{\mu} ||^2 + \nonumber \\
+			&& \qquad \frac{1}{\sigma^2} \bm{z}_i^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \Tr \left( \bm{z}_i^T \bm{W}^T \bm{W} \bm{z}_i \right) \nonumber \\
+			&=& -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} || \bm{x}_i - \bm{\mu} ||^2 + \nonumber \\
+			&& \qquad \frac{1}{\sigma^2} \bm{z}_i^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \Tr \left( \bm{z}_i \bm{z}_i^T \bm{W}^T \bm{W} \right)
+		\end{eqnarray}
+		第2項$\ln \mathcal{N}(\bm{z}_i | \bm{0}, \bm{I})$は次のようになる
+		\begin{eqnarray}
+			&& \ln \mathcal{N}(\bm{z}_i | \bm{0}, \bm{I}) \nonumber \\
+			&=& \ln \left( \frac{1}{(2\pi)^\frac{M}{2}} \exp \left( -\frac{1}{2} \bm{z}_i^T \bm{z}_i \right) \right) \nonumber \\
+			&=& -\frac{M}{2} \ln 2\pi - \frac{1}{2} \bm{z}_i^T \bm{z}_i \nonumber \\
+			&=& -\frac{M}{2} \ln 2\pi - \frac{1}{2} \Tr \left( \bm{z}_i^T \bm{z}_i \right) \nonumber \\
+			&=& -\frac{M}{2} \ln 2\pi - \frac{1}{2} \Tr \left( \bm{z}_i \bm{z}_i^T \right)
+		\end{eqnarray}
+		これより$\ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2)$は次のようになる
+		\begin{eqnarray}
+			&& \ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+			&=& \sum_i \left( \ln \mathcal{N}(\bm{x}_i | \bm{W} \bm{z}_i + \bm{\mu}, \sigma^2 \bm{I}) + \ln \mathcal{N}(\bm{z}_i | \bm{0}, \bm{I}) \right) \nonumber \\
+			&=& \sum_i \left\{ -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} || \bm{x}_i - \bm{\mu} ||^2 + \right. \nonumber \\
+			&& \qquad \frac{1}{\sigma^2} \bm{z}_i^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \Tr \left( \bm{z}_i \bm{z}_i^T \bm{W}^T \bm{W} \right) - \nonumber \\
+			&& \qquad \left. \frac{M}{2} \ln 2\pi - \frac{1}{2} \Tr \left( \bm{z}_i \bm{z}_i^T \right) \right\}
+		\end{eqnarray}
+		
+		\item $\bm{\mu}$は、全データの平均として得られることが分かっている
+		\item 従って、$\bm{\mu}$は既知であるとして、$\bar{\bm{x}}$と書くことにする
+		\newline
+		
+		\item 潜在変数の事後分布$p(\bm{Z} | \bm{X}, \bm{W}, \bm{\mu}, \sigma^2)$に関する期待値を取ると、次のようになる($\mathbb{E} \left[ \cdot \right]$は、事後分布による期待値を表す)
+		\begin{eqnarray}
+			&& \mathbb{E} \left[ \ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2) \right] \nonumber \\
+			&=& \sum_i \left\{ -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} || \bm{x}_i - \bm{\mu} ||^2 + \right. \nonumber \\
+			&& \qquad \frac{1}{\sigma^2} \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) - \nonumber \\
+			&& \qquad \left. \frac{M}{2} \ln 2\pi - \frac{1}{2} \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right) \right\}
+		\end{eqnarray}
+		
+		\item 事後分布は以下のようであった($\bm{M} = \bm{W}^T \bm{W} + \sigma^2 \bm{I}$)
+		\begin{equation}
+			p(\bm{z} | \bm{x}, \bm{W}, \bm{\mu}, \sigma^2) = \mathcal{N}(\bm{z} | \bm{M}^{-1} \bm{W}^T (\bm{x} - \bm{\mu}), \sigma^2 \bm{M}^{-1})
+		\end{equation}
+		
+		\item これより$\mathbb{E} \left[ \bm{z}_i \right]$と$\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right]$は次のようになる
+		\begin{eqnarray}
+			\mathbb{E} \left[ \bm{z}_i \right] &=& \bm{M}^{-1} \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) \\
+			\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] &=& \sigma^2 \bm{M}^{-1} + \mathbb{E} \left[ \bm{z}_i \right] \mathbb{E} \left[ \bm{z}_i \right]^T
+		\end{eqnarray}
+		
+		\item $\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right]$は、$\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] = \mathrm{cov} \left[ \bm{z}_i \right] + \mathbb{E} \left[ \bm{z}_i \right] \mathbb{E} \left[ \bm{z}_i \right]^T$から得られる
+		\item $\mathrm{cov} \left[ \bm{z} \right]$は、確率変数$\bm{z}$の共分散行列を意味する
+		\newline
+		
+		\item \alert{Eステップ}で計算するのは、$\mathbb{E} \left[ \bm{z}_i \right]$と$\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right]$の2つである
+		\item これらの値は、古いパラメータ$\bm{M}, \bm{W}, \bm{\mu}, \sigma^2$を使って計算される
+		\newline
+		
+		\item \alert{Mステップ}では、上記の期待値$\mathbb{E} \left[ \ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2) \right]$を、各パラメータ$\bm{W}, \sigma^2$について最大化する
+		\item 期待値を最大化するような、$\bm{W}, \sigma^2$の計算式は\alert{容易に導出できる}
+		\newline
+		
+		\item $\bm{W}$について偏微分し、$0$と等置すると次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \bm{W}} \mathbb{E} \left[ \ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2) \right] \nonumber \\
+			&=& \frac{\partial}{\partial \bm{W}} \sum_i \left\{ \frac{1}{\sigma^2} \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \right\} \nonumber \\
+			&=& \frac{1}{2 \sigma^2} \sum_i \frac{\partial}{\partial \bm{W}} \left\{ 2 \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \right\} \nonumber \\
+			&=& -\frac{1}{2 \sigma^2} \sum_i \frac{\partial}{\partial \bm{W}} \left\{ 2 \Tr \left( \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) \right) - \right. \nonumber \\
+			&& \qquad \Tr \left( \bm{W} \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \right) \Big\} \nonumber \\
+			&=& -\frac{1}{2 \sigma^2} \sum_i \frac{\partial}{\partial \bm{W}} \left\{ 2 \Tr \left( \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) \mathbb{E} \left[ \bm{z}_i \right]^T \right) - \right. \nonumber \\
+			&& \qquad \Tr \left( \bm{W} \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \right) \Big\} \nonumber \\
+			&=& -\frac{1}{2 \sigma^2} \sum_i \left( 2 \left( \bm{x}_i - \bm{\mu} \right) \mathbb{E} \left[ \bm{z}_i \right]^T - \bm{W} \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] + \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right]^T \right) \right) \nonumber \\
+			&=& -\frac{1}{2 \sigma^2} \sum_i \left( 2 \left( \bm{x}_i - \bm{\mu} \right) \mathbb{E} \left[ \bm{z}_i \right]^T - 2 \bm{W} \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right) \nonumber \\
+			&=& 0 \nonumber
+		\end{eqnarray}
+		
+		\item ここで、行列に関するトレースの微分の公式を用いた
+		\begin{eqnarray}
+			\frac{\partial}{\partial \bm{A}} \Tr \left( \bm{A} \bm{B} \right) &=& \bm{B}^T \\
+			\frac{\partial}{\partial \bm{A}} \Tr \left( \bm{A}^T \bm{B} \right) &=& \bm{B} \\
+			\frac{\partial}{\partial \bm{A}} \Tr \left( \bm{A}^T \bm{B} \bm{A} \right) &=& \left( \bm{B} + \bm{B}^T \right) \bm{A} \\
+			\frac{\partial}{\partial \bm{A}} \Tr \left( \bm{A} \bm{B} \bm{A}^T \right) &=& \bm{A} \left( \bm{B} + \bm{B}^T \right)
+		\end{eqnarray}
+		
+		\item 上式をパラメータ$\bm{W}$について解く
+		\begin{eqnarray}
+			&& -\frac{1}{2 \sigma^2} \sum_i \left( 2 \left( \bm{x}_i - \bm{\mu} \right) \mathbb{E} \left[ \bm{z}_i \right]^T - 2 \bm{W} \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right) = 0 \nonumber \\
+			&\Rightarrow& \bm{W} \left( \sum_i \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right) = \sum_i \left( \bm{x}_i - \bm{\mu} \right) \mathbb{E} \left[ \bm{z}_i \right]^T \nonumber \\
+			&\Rightarrow& \bm{W} = \left( \sum_i \left( \bm{x}_i - \bm{\mu} \right) \mathbb{E} \left[ \bm{z}_i \right]^T \right) \left( \sum_i \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right)^{-1}
+		\end{eqnarray}
+		
+		\item これより、パラメータ$\bm{W}$の更新式は次のようになる
+		\begin{equation}
+			\bm{W}_\mathrm{new} \leftarrow \left( \sum_i \left( \bm{x}_i - \bar{\bm{x}} \right) \mathbb{E} \left[ \bm{z}_i \right]^T \right) \left( \sum_i \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right)^{-1}
+		\end{equation}
+		
+		\item $\sigma^2$について偏微分し、$0$と等置すると次のようになる
+		\begin{eqnarray}
+			&& \frac{\partial}{\partial \sigma^2} \mathbb{E} \left[ \ln p(\bm{X}, \bm{Z} | \bm{W}, \bm{\mu}, \sigma^2) \right] \nonumber \\
+			&=& \frac{\partial}{\partial \sigma^2} \sum_i \left\{ -\frac{D}{2} \ln (2\pi \sigma^2) - \frac{1}{2 \sigma^2} || \bm{x}_i - \bm{\mu} ||^2 + \right. \nonumber \\
+			&& \qquad \left. \frac{1}{\sigma^2} \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) - \frac{1}{2 \sigma^2} \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \right\} \nonumber \\
+			&=& \sum_i \left\{ -\frac{D}{2} \frac{2\pi}{2\pi \sigma^2} + \frac{1}{2\sigma^4} || \bm{x}_i - \bm{\mu} ||^2 - \right. \nonumber \\
+			&& \qquad \left. \frac{1}{\sigma^4} \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) + \frac{1}{2\sigma^4} \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \right\} \nonumber \\
+			&=& -\frac{ND}{2} \frac{1}{\sigma^2} + \sum_i \left\{ \frac{1}{2\sigma^4} || \bm{x}_i - \bm{\mu} ||^2 - \right. \nonumber \\
+			&& \qquad \left. \frac{1}{\sigma^4} \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) + \frac{1}{2\sigma^4} \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \right\} = 0 \nonumber
+		\end{eqnarray}
+		
+		\item 上式をパラメータ$\sigma^2$について解く
+		\begin{eqnarray}
+			&& -ND \sigma^2 + \sum_i \left\{ || \bm{x}_i - \bm{\mu} ||^2 - 2 \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) + \right. \nonumber \\
+			&& \qquad \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \Big\} = 0 \nonumber \\
+			&\Rightarrow& \sigma^2 = \frac{1}{ND} \sum_i \left\{ || \bm{x}_i - \bm{\mu} ||^2 - 2 \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}^T \left( \bm{x}_i - \bm{\mu} \right) + \right. \nonumber \\
+			&& \qquad \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}^T \bm{W} \right) \Big\}
+		\end{eqnarray}
+		
+		\item これより、パラメータ$\sigma^2$の更新式は次のようになる
+		\begin{eqnarray}
+			&& \sigma^2_\mathrm{new} \leftarrow \frac{1}{ND} \sum_i \left\{ || \bm{x}_i - \bar{\bm{x}} ||^2 - 2 \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}_\mathrm{new}^T \left( \bm{x}_i - \bar{\bm{x}} \right) + \right. \nonumber \\
+			&& \qquad \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}_\mathrm{new}^T \bm{W}_\mathrm{new} \right) \Big\}
+		\end{eqnarray}
+		
+		\item 以上で、観測データ$\mathcal{D} = \left\{ \bm{x}_1, \ldots, \bm{x}_N \right\}$から、主成分分析のパラメータ$\bm{W}, \sigma^2$を推定するためのEMアルゴリズムが得られた
+		\newline
+		
+		\item Mステップのパラメータの更新では、Eステップで求めた$\mathbb{E} \left[ \bm{z}_i \right]$と$\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right]$を使用している
+		\newline
+		
+		\item これらの更新式を改良することで、\alert{オンライン型}のEMアルゴリズムを導出することも可能である
+	\end{itemize}
+\end{itemize}
+
+\end{frame}
+
+\subsection{確率的主成分分析(PPCA)のまとめ}
+
+\begin{frame}{確率的主成分分析(PPCA)のまとめ}
+
+\begin{block}{EMアルゴリズムによる確率的主成分分析モデルの推定}
+	\begin{itemize}
+		\item 目的は、確率的主成分分析モデルが与えられているとき、そのパラメータ($\bm{W}, \bm{\mu}, \sigma^2$)について、尤度関数$\ln p(\bm{X} | \bm{W}, \bm{\mu}, \sigma^2)$を最大化することである
+	\end{itemize}
+\end{block}
+
+\begin{enumerate}
+	\item \color{red}$\bm{\mu}$の決定\normalcolor : $\bm{\mu}$を、観測データ$\bm{x}$の標本平均として求める(これ以降、$\bm{\mu}$は既知として扱い、$\bar{\bm{x}}$と書く)
+	\begin{equation}
+		\bm{\mu} = \bar{\bm{x}} = \frac{1}{N} \sum_i \bm{x}_i
+	\end{equation}
+	
+	\item \color{red}初期化\normalcolor : パラメータ$\bm{W}_\mathrm{old}, \sigma^2_\mathrm{old}$を適当に初期化し、対数尤度$\ln p(\bm{X} | \bm{W}, \sigma^2)$の初期値を計算する
+	\newline
+	
+	\item \color{red}Eステップ\normalcolor : 現在のパラメータを用いて、以下の量を計算する \label{enum:ppca-e-step}
+	\begin{eqnarray}
+		\mathbb{E} \left[ \bm{z}_i \right] &=& \bm{M}^{-1} \bm{W}_\mathrm{old}^T \left( \bm{x}_i - \bar{\bm{x}} \right) \\
+			\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] &=& \sigma^2_\mathrm{old} \bm{M}^{-1} + \mathbb{E} \left[ \bm{z}_i \right] \mathbb{E} \left[ \bm{z}_i \right]^T
+	\end{eqnarray}
+	但し
+	\begin{equation}
+		\bm{M} = \bm{W}_\mathrm{old}^T \bm{W}_\mathrm{old} + \sigma^2_\mathrm{old} \bm{I}
+	\end{equation}
+	\newline
+	
+	\item \color{red}Mステップ\normalcolor : 現在の$\mathbb{E} \left[ \bm{z}_i \right]$と$\mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right]$を用いて、パラメータを更新する
+	\begin{eqnarray}
+		\bm{W}_\mathrm{new} &\leftarrow& \left( \sum_i \left( \bm{x}_i - \bar{\bm{x}} \right) \mathbb{E} \left[ \bm{z}_i \right]^T \right) \left( \sum_i \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \right)^{-1} \\
+		\sigma^2_\mathrm{new} &\leftarrow& \frac{1}{ND} \sum_i \left\{ || \bm{x}_i - \bar{\bm{x}} ||^2 - 2 \mathbb{E} \left[ \bm{z}_i \right]^T \bm{W}_\mathrm{new}^T \left( \bm{x}_i - \bar{\bm{x}} \right) + \right. \nonumber \\
+		&& \qquad \Tr \left( \mathbb{E} \left[ \bm{z}_i \bm{z}_i^T \right] \bm{W}_\mathrm{new}^T \bm{W}_\mathrm{new} \right) \Big\}
+	\end{eqnarray}
+	\newline
+	
+	\item 対数尤度関数$\ln p(\bm{X} | \bm{W}, \bm{\mu}, \sigma^2)$を計算する
+	\begin{eqnarray}
+		&& \ln p(\bm{X} | \bm{W}, \bm{\mu}, \sigma^2) \nonumber \\
+		&=& -\frac{ND}{2} \ln 2\pi - \frac{N}{2} \ln |\bm{C}| - \frac{1}{2} \sum_i \left( \bm{x}_i - \bar{\bm{x}} \right)^T \bm{C}^{-1} \left( \bm{x}_i - \bar{\bm{x}} \right) \nonumber
+	\end{eqnarray}
+	但し
+	\begin{equation}
+		\bm{C} = \bm{W}_\mathrm{new} \bm{W}_\mathrm{new}^T + \sigma^2_\mathrm{new} \bm{I}
+	\end{equation}
+	パラメータの変化量、あるいは対数尤度の変化量をみて、収束性を判定する
+	\newline
+	
+	\item 収束基準を満たしていなければ、(\ref{enum:ppca-e-step})に戻る
+	\begin{equation}
+		\bm{W}_\mathrm{old} \leftarrow \bm{W}_\mathrm{new}, \quad \sigma^2_\mathrm{old} \leftarrow \sigma^2_\mathrm{new}
+	\end{equation}
+\end{enumerate}
+
+\end{frame}
+
+\end{document}
