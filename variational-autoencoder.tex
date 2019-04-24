@@ -124,9 +124,9 @@
 	\begin{itemize}
 		\item 潜在変数を含む確率モデルについて、パラメータの最尤解を求めるために、EMアルゴリズムを導出した
 		\item EMアルゴリズムでは、潜在変数に関する事後分布$p(\bm{z} | \bm{x}, \theta)$を計算する必要があった
-		\item この事後分布$p(\bm{z} | \bm{x}, \theta)$の計算が困難であるとき、$p(\bm{z} | \bm{x}, \theta)$を別の分布$q(\bm{z} | \bm{x}, \phi)$で近似し、変分推論によって$q(\bm{z} | \phi)$の最適解を求めた
+		\item この事後分布$p(\bm{z} | \bm{x}, \theta)$の計算が困難であるとき、$p(\bm{z} | \bm{x})$を別の分布$q(\bm{z} | \bm{x}, \phi)$で近似し、変分推論によって$q(\bm{z} | \phi)$の最適解を求めた
 		\newline
-		\item VAEは変分推論の変種であり、近似事後分布$q(\bm{z} | \bm{x}, \phi)$と、$p(\bm{x} | \bm{z}, \theta)$の2つを\alert{ニューラルネットワーク}で表現する
+		\item VAEは変分推論の変種であり、近似事後分布$q(\bm{z} | \bm{x}, \phi)$と、$p(\bm{x} | \bm{z})$の2つを\alert{ニューラルネットワーク}で表現する
 		\newline
 		\item データ$\bm{x}$を潜在変数$\bm{z}$に対応付けるニューラルネットワークを、\alert{Encoder}という
 		\item 潜在変数$\bm{z}$からデータ$\bm{x}$を復元するニューラルネットワークを、\alert{Decoder}という
@@ -511,7 +511,7 @@
 		\newline
 		
 		\item そこで、次の図\ref{fig:vae-actual-architecture}のように構成する
-		\item $\bm{z} \sim \mathcal(\bm{z} | \bm{\mu}, \bm{\Sigma})$として、$\bm{z}$を分布から直接サンプリングするのではない
+		\item $\bm{z} \sim \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Sigma})$として、$\bm{z}$を分布から直接サンプリングするのではない
 		\item $\bm{z}$を、\alert{決定論的な関数}$g(\bm{\epsilon}, \bm{x} | \phi)$から決定する
 		\item 但し、$\bm{\epsilon}$は、分布$p(\bm{\epsilon})$からサンプリングされる
 		\newline
@@ -547,7 +547,7 @@
 		
 		\item ヤコビ行列$\bm{J}$を計算すると次のようになる
 		\begin{equation}
-			\bm{J} = \frac{\partial \bm{\epsilon}}{\partial \bm{y}} = \frac{\partial}{\partial \bm{z}} \left( \left( \bm{U} \bm{\Lambda}^\frac{1}{2} \right)^{-1} \left( \bm{z} - \bm{\mu} \right) \right) = \left( \left( \bm{U} \bm{\Lambda}^\frac{1}{2} \right)^{-1} \right)^T
+			\bm{J} = \frac{\partial \bm{\epsilon}}{\partial \bm{z}} = \frac{\partial}{\partial \bm{z}} \left( \left( \bm{U} \bm{\Lambda}^\frac{1}{2} \right)^{-1} \left( \bm{z} - \bm{\mu} \right) \right) = \left( \left( \bm{U} \bm{\Lambda}^\frac{1}{2} \right)^{-1} \right)^T
 		\end{equation}
 		
 		\item ヤコビ行列$\bm{J}$の行列式は次のようになる

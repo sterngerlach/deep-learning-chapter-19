@@ -114,13 +114,13 @@
 		\newline
 		
 		\item $q(\bm{Z})$を、$p(\bm{Z} | \bm{X})$にできるだけ近づけたい
-		\item そのためには、\color{red}KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} || \bm{X}))$を最小化\normalcolor すればよい
+		\item そのためには、\color{red}KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} | \bm{X}))$を最小化\normalcolor すればよい
 	\end{itemize} \
 	
 	\item KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} || \bm{X}))$の最小化
 	\begin{itemize}
-		\item 当然であるが、KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} || \bm{X}))$を最小化するためには、\alert{KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} || \bm{X}))$を計算できなければならない}
-		\item KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} || \bm{X}))$を計算するためには、\color{red}$p(\bm{Z} | \bm{X})$が分かっている必要がある\normalcolor
+		\item 当然であるが、KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} | \bm{X}))$を最小化するためには、\alert{KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} | \bm{X}))$を計算できなければならない}
+		\item KLダイバージェンス$\KL(q(\bm{Z}) || p(\bm{Z} | \bm{X}))$を計算するためには、\color{red}$p(\bm{Z} | \bm{X})$が分かっている必要がある\normalcolor
 		\item しかし$p(\bm{Z} | \bm{X})$を計算するのは困難であったため、KLダイバージェンスは求められない
 		\newline
 		\item これでは本末転倒である
@@ -714,7 +714,7 @@
 		但し
 		\begin{eqnarray}
 			&& \ln \mathcal{N}(\bm{z} | \bm{\mu}, \bm{\Lambda}^{-1}) \nonumber \\
-			&=& \ln \left( \frac{1}{(2\pi)^\frac{2}{2}} \frac{1}{|\bm{\Lambda}^{-1}|^\frac{1}{2}} \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \left( \bm{\Lambda}^{-1} \right)^{-1} (\bm{z} - \bm{\mu}) \right) \right) \nonumber \\
+			&=& \ln \left( \frac{1}{(2\pi)^\frac{1}{2}} \frac{1}{|\bm{\Lambda}^{-1}|^\frac{1}{2}} \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \left( \bm{\Lambda}^{-1} \right)^{-1} (\bm{z} - \bm{\mu}) \right) \right) \nonumber \\
 			&=& \ln \left( \frac{1}{2\pi} \frac{1}{|\bm{\Lambda}|^{-\frac{1}{2}}} \exp \left( -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \right) \right) \nonumber \\
 			&=& -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) + \mathrm{Const.}
 		\end{eqnarray}
@@ -917,7 +917,7 @@
 		
 		\item これより、未定乗数$\lambda$は
 		\begin{eqnarray}
-			&& \lambda q_j(\bm{Z}_j) = \left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right) \frac{1}{q_j(\bm{Z}_j)} \\
+			&& \lambda q_j(\bm{Z}_j) = \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \\
 			&\Rightarrow& \int \lambda q_j(\bm{Z}_j) d\bm{Z}_j = \int \underbrace{\left( \int p(\bm{Z} | \bm{X}) \prod_{i \neq j} d\bm{Z}_i \right)}_{=p(\bm{Z}_j | \bm{X})} d\bm{Z}_j \\
 			&\Rightarrow& \lambda \underbrace{\int q_j(\bm{Z}_j) d\bm{Z}_j}_{=1} = \underbrace{\int p(\bm{Z}_j | \bm{X}) d\bm{Z}_j}_{=1} \\
 			&\Rightarrow& \lambda = 1
@@ -930,7 +930,7 @@
 			&\Rightarrow& q_j^*(\bm{Z}_j) = p(\bm{Z}_j | \bm{X})
 		\end{eqnarray}
 		
-		\item $q_j^(\bm{Z}_j)$の最適解は、$p(\bm{Z} | \bm{X})$を、$i \neq j$である全ての$\bm{Z}_i$について周辺化した分布
+		\item $q_j^{(\bm{Z}_j)}$の最適解は、$p(\bm{Z} | \bm{X})$を、$i \neq j$である全ての$\bm{Z}_i$について周辺化した分布
 		\item これは閉じた解であり、繰り返しを必要としない
 	\end{itemize} \
 	
@@ -952,7 +952,7 @@
 			&& -\frac{1}{2} (\bm{z} - \bm{\mu})^T \bm{\Lambda} (\bm{z} - \bm{\mu}) \nonumber \\
 			&=& -\frac{1}{2} \left( \Lambda_{11} (z_1 - \mu_1)^2 + \right. \nonumber \\
 			&& \qquad \left. 2 \Lambda_{12} (z_1 - \mu_1)(z_2 - \mu_2) + \Lambda_{22} (z_2 - \mu_2)^2 \right) \\
-			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 + \nonumber \\
+			&=& -\frac{1}{2} \Lambda_{11} (z_1 - \mu_1)^2 + \Lambda_{12} (z_1 - \mu_1) \mu_2 \nonumber \\
 			&& \qquad -\frac{1}{2} \left( 2 \Lambda_{12} (z_1 - \mu_1) z_2 + \Lambda_{22} (z_2 - \mu_2)^2 \right)
 		\end{eqnarray}
 		そして
